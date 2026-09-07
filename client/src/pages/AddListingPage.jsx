@@ -1,5 +1,5 @@
 import { toast } from "react-toastify";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { INDIAN_LOCATIONS } from "../constants/indianStates.js";
 
 import { CREDIT_TYPES } from "../data/mock";
@@ -14,20 +14,52 @@ function AddListingPage({ onNavigate }) {
   const [step, setStep] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
-  const [form, setForm] = useState({
-    type: "",
-    quantity: "",
-    price: "",
-    location: "",
-    year: "2025-26",
-    validTill: "",
-    description: "",
-    certificateNumber: "",
-    sourcePortal: "",
-    certificateQuantity: "",
-    certificateIssuedDate: "",
-    certificateValidTill: "",
+  const [form, setForm] = useState(() => {
+    try {
+      const raw = sessionStorage.getItem("epr_listing_duplicate_draft");
+      if (raw) {
+        const draft = JSON.parse(raw);
+        return {
+          type: draft.type || "",
+          quantity: draft.quantity ?? "",
+          price: draft.price ?? "",
+          location: draft.location || "",
+          year: draft.year || "2025-26",
+          validTill: draft.validTill || "",
+          description: draft.description || "",
+          certificateNumber: draft.certificateNumber || "",
+          sourcePortal: draft.sourcePortal || "",
+          certificateQuantity: draft.certificateQuantity ?? "",
+          certificateIssuedDate: draft.certificateIssuedDate || "",
+          certificateValidTill: draft.certificateValidTill || draft.validTill || "",
+        };
+      }
+    } catch (error) {
+      console.warn("Unable to load duplicate listing draft", error);
+    }
+    return {
+      type: "",
+      quantity: "",
+      price: "",
+      location: "",
+      year: "2025-26",
+      validTill: "",
+      description: "",
+      certificateNumber: "",
+      sourcePortal: "",
+      certificateQuantity: "",
+      certificateIssuedDate: "",
+      certificateValidTill: "",
+    };
   });
+
+  useEffect(() => {
+    const duplicated = sessionStorage.getItem("epr_listing_duplicate_draft");
+    if (duplicated) {
+      sessionStorage.removeItem("epr_listing_duplicate_draft");
+      toast.info("Listing details copied. Upload the proof document again before submitting.");
+    }
+  }, []);
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
 

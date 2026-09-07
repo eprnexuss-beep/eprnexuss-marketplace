@@ -927,7 +927,7 @@ export const getSellerListings = async (req, res) => {
     })
       .populate(
         "documentId",
-        "fileName fileUrl verificationStatus rejectionReason"
+        "fileName fileUrl verificationStatus rejectionReason certificateNumber sourcePortal certificateQuantity certificateIssuedDate certificateValidTill"
       )
       .sort({ createdAt: -1 });
 

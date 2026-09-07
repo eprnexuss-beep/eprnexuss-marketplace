@@ -16,6 +16,10 @@ import { DealRoom } from "../components/DealRoom.jsx";
 import { DealsSection } from "../components/DealsSection.jsx";
 import { DisputesPage } from "../components/DisputeCenter.jsx";
 import { MessageChat } from "../components/MessageCenter.jsx";
+import SellerListingsSection from "../components/SellerListingsSection.jsx";
+import SellerInventorySection from "../components/SellerInventorySection.jsx";
+import SellerEarningsSection from "../components/SellerEarningsSection.jsx";
+import SellerAnalyticsSection from "../components/SellerAnalyticsSection.jsx";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -127,6 +131,16 @@ const NAV = [
     ),
   },
   {
+    id: "inventory",
+    label: "Inventory",
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 7.5L12 3l8 4.5v9L12 21l-8-4.5v-9z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 7.5l8 4.5 8-4.5M12 12v9" />
+      </svg>
+    ),
+  },
+  {
     id: "requests",
     label: "Purchase Requests",
     icon: (
@@ -161,6 +175,24 @@ const NAV = [
           strokeLinejoin="round"
           d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
         />
+      </svg>
+    ),
+  },
+  {
+    id: "earnings",
+    label: "Earnings & Settlements",
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v18M17 7.5c0-1.7-2.2-3-5-3s-5 1.3-5 3 2.2 3 5 3 5 1.3 5 3-2.2 3-5 3-5-1.3-5-3" />
+      </svg>
+    ),
+  },
+  {
+    id: "analytics",
+    label: "Analytics",
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 19V5m0 14h16M7 16v-5m5 5V7m5 9v-8" />
       </svg>
     ),
   },
@@ -244,7 +276,7 @@ const NAV = [
 function SellerDashboard({ onNavigate }) {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const validSections = useMemo(() => new Set(["dashboard", "listings", "requests", "deals", "disputes", "messages", "documents", "profile"]), []);
+  const validSections = useMemo(() => new Set(["dashboard", "listings", "inventory", "requests", "deals", "earnings", "analytics", "disputes", "messages", "documents", "profile"]), []);
   const initialSection = validSections.has(searchParams.get("section")) ? searchParams.get("section") : "dashboard";
   const [active, setActive] = useState(initialSection);
   const validDealTabs = useMemo(() => new Set(["overview", "messages", "quotation", "payment", "dispute", "review"]), []);
@@ -449,7 +481,11 @@ function SellerDashboard({ onNavigate }) {
       0,
     );
     const available = activeListings.reduce(
-      (sum, listing) => sum + Number(listing.quantity || 0),
+      (sum, listing) =>
+        sum + Math.max(
+          Number(listing.quantity || 0) - Number(listing.reservedQuantity || 0),
+          0,
+        ),
       0,
     );
     const reserved = activeListings.reduce(
@@ -461,10 +497,7 @@ function SellerDashboard({ onNavigate }) {
         listing.totalQuantity ?? listing.quantity ?? 0,
       );
       const listingAvailable = Number(listing.quantity || 0);
-      const listingReserved = Number(listing.reservedQuantity || 0);
-      return (
-        sum + Math.max(0, listingTotal - listingAvailable - listingReserved)
-      );
+      return sum + Math.max(0, listingTotal - listingAvailable);
     }, 0);
 
     return { total, available, reserved, sold };
@@ -975,79 +1008,25 @@ function SellerDashboard({ onNavigate }) {
           )}
 
           {active === "listings" && (
-            <Card>
-              <div className="px-5 py-4 border-b border-[#E5EAF0] flex items-center justify-between">
-                <h2
-                  className="font-semibold text-[#0F1923]"
-                >
-                  All My Listings
-                </h2>
-                <Button size="sm" onClick={() => onNavigate("add-listing")}>
-                  Add Listing
-                </Button>
-              </div>
-              {listingLoading ? (
-                <div className="py-16 text-center text-[#9CA3AF]">
-                  Loading your listings...
-                </div>
-              ) : listingError ? (
-                <div className="py-16 text-center text-[#EF4444]">
-                  {listingError}
-                </div>
-              ) : sellerListings.length === 0 ? (
-                <div className="py-16 text-center text-[#9CA3AF]">
-                  You have not created any listings yet.
-                </div>
-              ) : (
-                <Table
-                  headers={[
-                    "Credit Type",
-                    "Qty (MT)",
-                    "Price (₹/MT)",
-                    "Location",
-                    "Year",
-                    "Valid Till",
-                    "Listed On",
-                    "Status",
-                  ]}
-                >
-                  {sellerListings.map((listing) => (
-                    <Tr key={listing._id}>
-                      <Td>
-                        <span className="font-medium">{listing.category}</span>
-                      </Td>
-                      <Td>{listing.quantity}</Td>
-                      <Td>₹{listing.price}</Td>
-                      <Td>{listing.location}</Td>
-                      <Td>{listing.complianceYear}</Td>
-                      <Td>
-                        {listing.validTill
-                          ? new Date(listing.validTill).toLocaleDateString(
-                              "en-IN",
-                            )
-                          : "—"}
-                      </Td>
-                      <Td>
-                        {listing.createdAt
-                          ? new Date(listing.createdAt).toLocaleDateString(
-                              "en-IN",
-                            )
-                          : "—"}
-                      </Td>
-                      <Td>
-                        <Badge
-                          label={
-                            listing.status === "pending_review"
-                              ? "Pending"
-                              : listing.status
-                          }
-                        />
-                      </Td>
-                    </Tr>
-                  ))}
-                </Table>
-              )}
-            </Card>
+            <SellerListingsSection
+              listings={sellerListings}
+              loading={listingLoading}
+              error={listingError}
+              onRefresh={() => fetchSellerListings()}
+              onNavigate={onNavigate}
+            />
+          )}
+
+          {active === "inventory" && (
+            <SellerInventorySection listings={sellerListings} deals={sellerDeals} />
+          )}
+
+          {active === "earnings" && (
+            <SellerEarningsSection deals={sellerDeals} />
+          )}
+
+          {active === "analytics" && (
+            <SellerAnalyticsSection listings={sellerListings} deals={sellerDeals} requests={purchaseRequests} />
           )}
           {active === "requests" && (
             <CompactSellerRequests
