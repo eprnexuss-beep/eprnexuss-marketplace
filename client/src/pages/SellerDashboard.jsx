@@ -19,6 +19,8 @@ import { MessageChat } from "../components/MessageCenter.jsx";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
+import VerificationStatusBanner from "../components/VerificationStatusBanner.jsx";
+
 function CompactSellerRequests({ requests = [], loading = false, error = "", onRetry, onRead }) {
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
@@ -516,7 +518,7 @@ function SellerDashboard({ onNavigate }) {
     if (pendingListings > 0) {
       items.push({
         title: `${pendingListings} listing${pendingListings === 1 ? "" : "s"} awaiting review`,
-        description: "EPR Nexus is reviewing these listings.",
+        description: "EPR Nexuss is reviewing these listings.",
         action: () => setActive("listings"),
         label: "View listings",
         tone: "amber",
@@ -537,10 +539,10 @@ function SellerDashboard({ onNavigate }) {
   }, [sellerListings, purchaseRequests, sellerDeals, visibleUnreadCount]);
 
   return (
-    <div className="min-h-screen bg-[#F7F9FB] flex">
+    <div className="dashboard-shell min-h-screen bg-[#F7F9FB] flex">
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-56 bg-white border-r border-[#E5EAF0] flex flex-col transition-transform duration-200 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} md:relative md:translate-x-0 md:flex`}
+        className={`fixed inset-y-0 left-0 z-40 w-[252px] bg-white border-r border-[#E5EAF0] flex flex-col transition-transform duration-200 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} md:relative md:translate-x-0 md:flex`}
       >
         {/* Brand */}
         <div className="px-4 py-4 border-b border-[#E5EAF0] flex items-center gap-2">
@@ -562,9 +564,8 @@ function SellerDashboard({ onNavigate }) {
           <div>
             <p
               className="text-sm font-bold text-[#0F1923]"
-              style={{ fontFamily: "Outfit, sans-serif" }}
             >
-              EPR Nexus
+              EPR Nexuss
             </p>
             <p className="text-[10px] text-[#6B7280]">Seller Portal</p>
           </div>
@@ -649,9 +650,9 @@ function SellerDashboard({ onNavigate }) {
       )}
 
       {/* Main */}
-      <main className="flex-1 min-w-0">
+      <main className="dashboard-main flex-1 min-w-0">
         {/* Topbar */}
-        <div className="bg-white border-b border-[#E5EAF0] px-4 sm:px-6 py-3 flex items-center justify-between sticky top-0 z-20">
+        <div className="dashboard-header bg-white border-b border-[#E5EAF0] px-4 sm:px-6 py-3 flex items-center justify-between sticky top-0 z-20">
           <div className="flex items-center gap-3">
             <button
               className="md:hidden p-1.5 hover:bg-[#F0F4F8] rounded-lg"
@@ -673,7 +674,6 @@ function SellerDashboard({ onNavigate }) {
             </button>
             <h1
               className="text-base font-semibold text-[#0F1923]"
-              style={{ fontFamily: "Outfit, sans-serif" }}
             >
               {NAV.find((n) => n.id === active)?.label ?? "Dashboard"}
             </h1>
@@ -707,7 +707,9 @@ function SellerDashboard({ onNavigate }) {
           </div>
         </div>
 
-        <div className="px-4 sm:px-6 py-6 max-w-6xl">
+        <div className="dashboard-content px-4 py-6 sm:px-6 sm:py-7 lg:px-8 max-w-[1600px]">
+          <VerificationStatusBanner onNavigate={onNavigate} />
+
           {active === "dashboard" && (
             <>
               <PageHeader
@@ -977,7 +979,6 @@ function SellerDashboard({ onNavigate }) {
               <div className="px-5 py-4 border-b border-[#E5EAF0] flex items-center justify-between">
                 <h2
                   className="font-semibold text-[#0F1923]"
-                  style={{ fontFamily: "Outfit, sans-serif" }}
                 >
                   All My Listings
                 </h2>
@@ -1079,8 +1080,8 @@ function SellerDashboard({ onNavigate }) {
               <div className="px-5 py-4 border-b border-[#E5EAF0]">
                 <h2 className="font-semibold text-[#0F1923]">Messages</h2>
                 <p className="text-xs text-[#9CA3AF] mt-1">
-                  Private communication with EPR Nexus. Quotations are handled
-                  by EPR Nexus and are not part of Messages.
+                  Private communication with EPR Nexuss. Quotations are handled
+                  by EPR Nexuss and are not part of Messages.
                 </p>
               </div>
               {purchaseRequests.length === 0 ? (
@@ -1144,7 +1145,7 @@ function SellerDashboard({ onNavigate }) {
               <div className="px-5 py-4 border-b border-[#E5EAF0]">
                 <h2 className="font-semibold text-[#0F1923]">Documents</h2>
                 <p className="text-xs text-[#9CA3AF] mt-1">
-                  Manage the documents used for EPR Nexus verification.
+                  Manage the documents used for EPR Nexuss verification.
                 </p>
               </div>
               <div className="p-5">
@@ -1153,7 +1154,7 @@ function SellerDashboard({ onNavigate }) {
                     Business verification
                   </p>
                   <p className="text-sm text-[#6B7280] mt-1">
-                    Your verification documents are reviewed by EPR Nexus
+                    Your verification documents are reviewed by EPR Nexuss
                     administrators.
                   </p>
                   <Button

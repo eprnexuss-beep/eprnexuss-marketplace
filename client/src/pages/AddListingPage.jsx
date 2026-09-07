@@ -1,3 +1,4 @@
+import { toast } from "react-toastify";
 import { useState } from "react";
 import { INDIAN_LOCATIONS } from "../constants/indianStates.js";
 
@@ -42,14 +43,14 @@ function AddListingPage({ onNavigate }) {
     ];
 
     if (!allowedTypes.includes(file.type)) {
-      alert("Only PDF, JPG, PNG and WEBP files are allowed.");
+      toast.error("Only PDF, JPG, PNG and WEBP files are allowed.");
       return;
     }
 
     const maxFileSize = 10 * 1024 * 1024;
 
     if (file.size > maxFileSize) {
-      alert("File size must not exceed 10 MB.");
+      toast.error("File size must not exceed 10 MB.");
       return;
     }
 
@@ -58,95 +59,95 @@ function AddListingPage({ onNavigate }) {
 
   const handleSubmit = async () => {
     if (!user) {
-      alert("Please login before creating a listing.");
+      toast.error("Please login before creating a listing.");
       return;
     }
 
     if (user.role !== "seller") {
-      alert("Only sellers can create listings.");
+      toast.error("Only sellers can create listings.");
       return;
     }
 
     if (!form.type) {
-      alert("Please select a credit type.");
+      toast.error("Please select a credit type.");
       setStep(0);
       return;
     }
 
     if (!form.quantity || Number(form.quantity) <= 0) {
-      alert("Please enter a valid quantity.");
+      toast.error("Please enter a valid quantity.");
       setStep(0);
       return;
     }
 
     if (!form.price || Number(form.price) <= 0) {
-      alert("Please enter a valid price.");
+      toast.error("Please enter a valid price.");
       setStep(0);
       return;
     }
 
     if (!form.location) {
-      alert("Please select a location.");
+      toast.error("Please select a location.");
       setStep(0);
       return;
     }
 
     if (!form.year) {
-      alert("Please select a compliance year.");
+      toast.error("Please select a compliance year.");
       setStep(0);
       return;
     }
 
     if (!form.validTill) {
-      alert("Please enter a valid till date.");
+      toast.error("Please enter a valid till date.");
       setStep(0);
       return;
     }
 
     if (!form.certificateNumber.trim()) {
-      alert("Please enter the certificate / credit registration number.");
+      toast.error("Please enter the certificate / credit registration number.");
       setStep(1);
       return;
     }
 
     if (!form.sourcePortal) {
-      alert("Please select the source portal.");
+      toast.error("Please select the source portal.");
       setStep(1);
       return;
     }
 
     if (!form.certificateQuantity || Number(form.certificateQuantity) <= 0) {
-      alert("Please enter the quantity shown on the certificate.");
+      toast.error("Please enter the quantity shown on the certificate.");
       setStep(1);
       return;
     }
 
     if (!form.certificateIssuedDate || !form.validTill) {
-      alert("Please enter the certificate issue date and valid till date.");
+      toast.error("Please enter the certificate issue date and valid till date.");
       setStep(1);
       return;
     }
 
     if (new Date(form.certificateIssuedDate) > new Date(form.validTill)) {
-      alert("Certificate issue date cannot be after its validity date.");
+      toast.error("Certificate issue date cannot be after its validity date.");
       setStep(1);
       return;
     }
 
     if (new Date(form.validTill) < new Date()) {
-      alert("Valid till date must be in the future.");
+      toast.error("Valid till date must be in the future.");
       setStep(0);
       return;
     }
 
     if (Number(form.certificateQuantity) < Number(form.quantity)) {
-      alert("Certificate quantity must cover the quantity you are listing.");
+      toast.error("Certificate quantity must cover the quantity you are listing.");
       setStep(1);
       return;
     }
 
     if (!uploadedFile) {
-      alert("Please upload the proof document.");
+      toast.error("Please upload the proof document.");
       setStep(1);
       return;
     }
@@ -185,13 +186,13 @@ function AddListingPage({ onNavigate }) {
     } catch (error) {
       console.error("Create listing error:", error);
 
-      alert(error.response?.data?.message || "Failed to submit listing.");
+      toast.error(error.response?.data?.message || "Failed to submit listing.");
     }
   };
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#F7F9FB] flex items-center justify-center px-4 py-12">
+      <div className="pro-page min-h-screen bg-[#F7F9FB] flex items-center justify-center px-4 py-12">
         <div className="max-w-lg w-full text-center">
           <div className="bg-white border border-[#E5EAF0] rounded-2xl p-10 shadow-sm">
             <div className="w-16 h-16 rounded-full bg-[#EBF8EC] text-[#5AC361] flex items-center justify-center mx-auto mb-5">
@@ -211,12 +212,11 @@ function AddListingPage({ onNavigate }) {
             </div>
             <h2
               className="text-2xl font-bold text-[#0F1923] mb-2"
-              style={{ fontFamily: "Outfit, sans-serif" }}
             >
               Listing Submitted!
             </h2>
             <p className="text-[#6B7280] mb-6 text-sm leading-relaxed">
-              Your listing is now under review. EPR Nexus admin will verify the
+              Your listing is now under review. EPR Nexuss admin will verify the
               uploaded screenshot against your listing details.
             </p>
 
@@ -308,7 +308,6 @@ function AddListingPage({ onNavigate }) {
 
         <h1
           className="text-2xl font-bold text-[#0F1923] mb-6"
-          style={{ fontFamily: "Outfit, sans-serif" }}
         >
           Post New Credit Listing
         </h1>
@@ -343,7 +342,6 @@ function AddListingPage({ onNavigate }) {
           <div className="bg-white border border-[#E5EAF0] rounded-2xl p-6">
             <h2
               className="text-base font-semibold text-[#0F1923] mb-5"
-              style={{ fontFamily: "Outfit, sans-serif" }}
             >
               Step 1: Credit Details
             </h2>
@@ -435,7 +433,6 @@ function AddListingPage({ onNavigate }) {
           <div className="bg-white border border-[#E5EAF0] rounded-2xl p-6">
             <h2
               className="text-base font-semibold text-[#0F1923] mb-1"
-              style={{ fontFamily: "Outfit, sans-serif" }}
             >
               Step 2: Proof of Credit Upload
             </h2>
@@ -609,7 +606,6 @@ function AddListingPage({ onNavigate }) {
           <div className="bg-white border border-[#E5EAF0] rounded-2xl p-6">
             <h2
               className="text-base font-semibold text-[#0F1923] mb-5"
-              style={{ fontFamily: "Outfit, sans-serif" }}
             >
               Step 3: Review & Submit
             </h2>
@@ -617,7 +613,6 @@ function AddListingPage({ onNavigate }) {
             <div className="bg-[#F7F9FB] border border-[#E5EAF0] rounded-xl p-5 mb-5">
               <h3
                 className="text-sm font-semibold text-[#374151] mb-3"
-                style={{ fontFamily: "Outfit, sans-serif" }}
               >
                 Listing Summary
               </h3>

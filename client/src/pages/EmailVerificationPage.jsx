@@ -78,7 +78,7 @@ function EmailVerificationPage({ token, onNavigate }) {
   }, [token]);
 
   return (
-    <div className="min-h-screen bg-[#F7F9FB] flex items-center justify-center px-4 py-12">
+    <div className="pro-page min-h-screen bg-[#F7F9FB] flex items-center justify-center px-4 py-12">
       <div className="bg-white border border-[#E5EAF0] rounded-2xl shadow-sm p-8 max-w-md w-full text-center">
         <div
           className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5 ${
@@ -139,7 +139,7 @@ function EmailVerificationPage({ token, onNavigate }) {
             className="mt-6 w-full"
             onClick={() => onNavigate("home")}
           >
-            {status === "success" ? "Continue to EPR Nexus" : "Back to Login"}
+            {status === "success" ? "Continue to EPR Nexuss" : "Back to Login"}
           </Button>
         )}
       </div>

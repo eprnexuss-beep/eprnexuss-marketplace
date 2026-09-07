@@ -1,3 +1,4 @@
+import { toast } from "react-toastify";
 import { useEffect, useMemo, useState } from "react";
 import api from "../services/api.js";
 import { Badge, Button, Card, Input, Textarea } from "./ui";
@@ -31,7 +32,7 @@ function MessageList({ messages, role }) {
           <div>
             <p className="text-sm font-medium text-[#374151]">No messages yet</p>
             <p className="text-xs text-[#9CA3AF] mt-1">
-              Messages are private between you and EPR Nexus.
+              Messages are private between you and EPR Nexuss.
             </p>
           </div>
         </div>
@@ -99,7 +100,7 @@ export function MessageChat({ requestId, role = "buyer", compact = false, onRead
         setMessage("");
       }
     } catch (error) {
-      alert(error.response?.data?.message || "Unable to send your message to EPR Nexus.");
+      toast.error(error.response?.data?.message || "Unable to send your message to EPR Nexuss.");
     } finally {
       setSending(false);
     }
@@ -118,7 +119,7 @@ export function MessageChat({ requestId, role = "buyer", compact = false, onRead
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl h-[min(700px,92vh)] overflow-hidden flex flex-col">
             <div className="px-5 py-4 border-b border-[#E5EAF0] flex items-center justify-between shrink-0">
               <div>
-                <h3 className="font-semibold text-[#0F1923]">EPR Nexus Messages</h3>
+                <h3 className="font-semibold text-[#0F1923]">EPR Nexuss Messages</h3>
                 <p className="text-xs text-[#9CA3AF] mt-1">Your conversation is private. Buyer and seller contact details are never shared.</p>
               </div>
               <button type="button" onClick={() => setOpen(false)} className="p-2 rounded-lg hover:bg-[#F0F4F8] text-[#6B7280]">✕</button>
@@ -131,7 +132,7 @@ export function MessageChat({ requestId, role = "buyer", compact = false, onRead
               )}
               <div className="p-4 border-t border-[#E5EAF0] shrink-0">
                 <div className="flex gap-2 items-end">
-                  <Textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Message EPR Nexus about documents, timing or transaction coordination..." className="min-h-[72px]" />
+                  <Textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Message EPR Nexuss about documents, timing or transaction coordination..." className="min-h-[72px]" />
                   <Button onClick={send} disabled={sending || !message.trim()}>{sending ? "Sending..." : "Send"}</Button>
                 </div>
                 {locked ? <p className="text-[11px] text-[#6B7280] mt-2">Commercial terms are locked. Messages are now for transaction coordination only.</p> : null}

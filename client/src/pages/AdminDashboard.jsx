@@ -1,3 +1,4 @@
+import { toast } from "react-toastify";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -20,15 +21,45 @@ import {
   Tr,
   Td,
   Textarea,
+  PromptModal,
 } from "../components/ui";
 const downloadDocument = async (documentId, fileName = "document") => {
   try {
-    const response = await api.get(`/documents/${documentId}/download`, {
-      responseType: "blob",
-    });
+    const token = localStorage.getItem("token");
 
-    const contentType = response.headers["content-type"] || "application/octet-stream";
-    const blob = new Blob([response.data], { type: contentType });
+    if (!token) {
+      toast.error("Your admin session has expired. Please login again.");
+      return;
+    }
+
+    // Use fetch here instead of relying on a browser navigation/download URL.
+    // The document endpoint is protected and must receive the admin Bearer token.
+    const baseUrl = api.defaults.baseURL || "";
+    const response = await fetch(
+      `${baseUrl.replace(/\/$/, "")}/documents/${encodeURIComponent(documentId)}/download`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    if (!response.ok) {
+      let message = "Unable to open document.";
+      try {
+        const contentType = response.headers.get("content-type") || "";
+        if (contentType.includes("application/json")) {
+          const data = await response.json();
+          message = data?.message || message;
+        }
+      } catch {
+        // Keep the generic message if the error body cannot be parsed.
+      }
+      throw new Error(message);
+    }
+
+    const blob = await response.blob();
     const url = window.URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
@@ -40,7 +71,7 @@ const downloadDocument = async (documentId, fileName = "document") => {
     anchor.remove();
     window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
   } catch (error) {
-    alert(error.response?.data?.message || "Unable to open document.");
+    toast.error(error?.message || "Unable to open document.");
   }
 };
 
@@ -575,6 +606,7 @@ function AdminDashboard({ onNavigate }) {
   const [paymentReviewLoading, setPaymentReviewLoading] = useState(false);
   const [paymentProofUrl, setPaymentProofUrl] = useState("");
   const [paymentActionLoading, setPaymentActionLoading] = useState(false);
+  const [rejectionPrompt, setRejectionPrompt] = useState(null);
 
   const fetchPurchaseRequests = async ({ silent = false } = {}) => {
     try {
@@ -650,7 +682,7 @@ function AdminDashboard({ onNavigate }) {
     } catch (error) {
       console.error("Deal status update failed:", error);
 
-      alert(error.response?.data?.message || "Failed to update deal.");
+      toast.error(error.response?.data?.message || "Failed to update deal.");
     }
   };
 
@@ -661,13 +693,13 @@ function AdminDashboard({ onNavigate }) {
       const response = await api.get(`/payments/deal/${deal._id}`);
       const payment = response.data?.payment;
       if (!payment) {
-        alert("The buyer has not submitted a payment proof yet.");
+        toast.error("The buyer has not submitted a payment proof yet.");
         return;
       }
       setPaymentReview({ deal, payment, invoice: response.data?.invoice });
     } catch (error) {
       console.error("Payment review load failed:", error);
-      alert(error.response?.data?.message || "Failed to load payment details.");
+      toast.error(error.response?.data?.message || "Failed to load payment details.");
     } finally {
       setPaymentReviewLoading(false);
     }
@@ -683,7 +715,7 @@ function AdminDashboard({ onNavigate }) {
       setPaymentProofUrl(url);
     } catch (error) {
       console.error("Payment proof load failed:", error);
-      alert(error.response?.data?.message || "Failed to load payment screenshot.");
+      toast.error(error.response?.data?.message || "Failed to load payment screenshot.");
     } finally {
       setPaymentActionLoading(false);
     }
@@ -701,7 +733,7 @@ function AdminDashboard({ onNavigate }) {
       const payment = paymentResponse.data?.payment;
 
       if (!payment) {
-        alert("The buyer has not submitted a payment proof yet.");
+        toast.error("The buyer has not submitted a payment proof yet.");
         return;
       }
 
@@ -715,7 +747,7 @@ function AdminDashboard({ onNavigate }) {
       }
     } catch (error) {
       console.error("Payment confirmation failed:", error);
-      alert(error.response?.data?.message || "Failed to confirm payment.");
+      toast.error(error.response?.data?.message || "Failed to confirm payment.");
     }
   };
 
@@ -736,7 +768,7 @@ function AdminDashboard({ onNavigate }) {
     } catch (error) {
       console.error("Purchase request review failed:", error);
 
-      alert(
+      toast.error(
         error.response?.data?.message || "Failed to update purchase request.",
       );
     }
@@ -797,7 +829,7 @@ function AdminDashboard({ onNavigate }) {
     } catch (error) {
       console.error("Listing review failed:", error);
 
-      alert(error.response?.data?.message || "Failed to review listing.");
+      toast.error(error.response?.data?.message || "Failed to review listing.");
     }
   };
 
@@ -816,7 +848,7 @@ function AdminDashboard({ onNavigate }) {
     } catch (error) {
       console.error("KYC review failed:", error);
 
-      alert(error.response?.data?.message || "Failed to review document.");
+      toast.error(error.response?.data?.message || "Failed to review document.");
 
       throw error;
     }
@@ -1332,19 +1364,15 @@ function AdminDashboard({ onNavigate }) {
 
                       <Button
                         variant="danger"
-                        onClick={() => {
-                          const reason = window.prompt(
-                            "Enter rejection reason:",
-                          );
-
-                          if (reason?.trim()) {
-                            reviewListing(
-                              listing._id,
-                              "rejected",
-                              reason.trim(),
-                            );
-                          }
-                        }}
+                        onClick={() =>
+                          setRejectionPrompt({
+                            type: "listing",
+                            id: listing._id,
+                            title: "Reject listing",
+                            description: "Add the reason the seller should see for this rejection.",
+                            value: "",
+                          })
+                        }
                       >
                         Reject Listing
                       </Button>
@@ -1611,19 +1639,15 @@ function AdminDashboard({ onNavigate }) {
                         {request.status === "pending" && (
                           <Button
                             variant="danger"
-                            onClick={() => {
-                              const reason = window.prompt(
-                                "Enter rejection reason:",
-                              );
-
-                              if (reason?.trim()) {
-                                reviewPurchaseRequest(
-                                  request._id,
-                                  "rejected",
-                                  reason.trim(),
-                                );
-                              }
-                            }}
+                            onClick={() =>
+                              setRejectionPrompt({
+                                type: "request",
+                                id: request._id,
+                                title: "Reject purchase request",
+                                description: "Add the reason the buyer should see for this rejection.",
+                                value: "",
+                              })
+                            }
                           >
                             Reject Request
                           </Button>
@@ -2025,6 +2049,29 @@ function AdminDashboard({ onNavigate }) {
           />
         </div>
       )}
+
+      <PromptModal
+        open={Boolean(rejectionPrompt)}
+        title={rejectionPrompt?.title}
+        description={rejectionPrompt?.description}
+        value={rejectionPrompt?.value || ""}
+        onChange={(value) =>
+          setRejectionPrompt((current) => (current ? { ...current, value } : current))
+        }
+        onCancel={() => setRejectionPrompt(null)}
+        onConfirm={() => {
+          const reason = rejectionPrompt?.value?.trim();
+          if (!reason) return;
+          if (rejectionPrompt.type === "listing") {
+            reviewListing(rejectionPrompt.id, "rejected", reason);
+          } else {
+            reviewPurchaseRequest(rejectionPrompt.id, "rejected", reason);
+          }
+          setRejectionPrompt(null);
+        }}
+        confirmLabel="Reject"
+        placeholder="Enter rejection reason..."
+      />
 
       {paymentReview ? (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/45 p-4">

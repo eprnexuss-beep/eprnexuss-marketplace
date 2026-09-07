@@ -112,11 +112,6 @@ function VerificationPage({ onNavigate }) {
       setError("");
       const response = await resendVerification();
       setSuccess(response.message || "A new verification email has been sent.");
-      if (response.developmentVerificationUrl) {
-        setSuccess(
-          `${response.message} Development link: ${response.developmentVerificationUrl}`,
-        );
-      }
       await refreshUser();
     } catch (requestError) {
       // A stale browser session can still think email verification is pending
@@ -140,7 +135,7 @@ function VerificationPage({ onNavigate }) {
   const status = verification?.status || user?.kycStatus || "pending";
 
   return (
-    <div className="min-h-screen bg-[#F7F9FB] px-4 sm:px-6 py-10">
+    <div className="pro-page min-h-screen bg-[#F7F9FB] px-4 sm:px-6 py-10">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -153,12 +148,11 @@ function VerificationPage({ onNavigate }) {
             </button>
             <h1
               className="text-3xl font-bold text-[#0F1923]"
-              style={{ fontFamily: "Outfit, sans-serif" }}
             >
               Account Verification
             </h1>
             <p className="text-sm text-[#6B7280] mt-1">
-              Verify your business before using EPR Nexus trading services.
+              Verify your business before using EPR Nexuss trading services.
             </p>
           </div>
           <Badge
@@ -288,7 +282,7 @@ function VerificationPage({ onNavigate }) {
                 </h2>
                 <p className="text-sm text-[#6B7280] mt-2 max-w-md mx-auto">
                   Your verification document is complete and has been sent to
-                  the EPR Nexus admin team. Please wait for approval.
+                  the EPR Nexuss admin team. Please wait for approval.
                 </p>
                 <div className="mt-5 text-left max-w-md mx-auto bg-[#F7F9FB] rounded-xl border border-[#E5EAF0] p-4">
                   <p className="text-xs text-[#9CA3AF]">Company</p>

@@ -1,3 +1,4 @@
+import { toast } from "react-toastify";
 import { useEffect, useMemo, useState } from "react";
 import api from "../services/api.js";
 import { Badge, Button, Card, Textarea } from "../components/ui.jsx";
@@ -73,7 +74,7 @@ export default function ManagedMessagesPage({ initialRequestId = "", onRead }) {
         setMessage("");
       }
     } catch (error) {
-      alert(error.response?.data?.message || "Failed to send the message.");
+      toast.error(error.response?.data?.message || "Failed to send the message.");
     } finally {
       setSending(false);
     }
@@ -97,7 +98,7 @@ export default function ManagedMessagesPage({ initialRequestId = "", onRead }) {
         {!selected ? <div className="h-full flex items-center justify-center p-12 text-center text-[#9CA3AF]">Select a conversation.</div> : <>
           <div className="p-4 sm:p-5 border-b border-[#E5EAF0]"><h2 className="font-semibold text-[#0F1923]">{selected.listingId?.category || "Credit"} · {selected.quantity} MT</h2><p className="text-xs text-[#6B7280] mt-1">Buyer: {selected.buyerId?.company || selected.buyerId?.name || "—"} · Seller: {selected.listingId?.sellerId?.company || selected.listingId?.sellerId?.name || "—"}</p></div>
           <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-3 bg-[#F7F9FB]">
-            {threadLoading ? <div className="text-center text-sm text-[#9CA3AF]">Loading messages...</div> : messages.length === 0 ? <div className="h-full flex items-center justify-center text-sm text-[#9CA3AF]">No messages yet.</div> : messages.map((item) => <div key={item._id} className="bg-white border border-[#E5EAF0] rounded-xl p-4"><div className="flex items-center justify-between gap-3"><p className="text-xs font-semibold text-[#0F1923]">{item.senderRole === "admin" ? `EPR Nexus → ${item.targetRole === "seller" ? "Seller" : "Buyer"}` : `${item.senderRole === "seller" ? "Seller" : "Buyer"} → EPR Nexus`}</p><span className="text-[10px] text-[#9CA3AF]">{new Date(item.createdAt).toLocaleString("en-IN")}</span></div><p className="text-sm text-[#374151] mt-2 whitespace-pre-wrap">{item.message}</p></div>)}
+            {threadLoading ? <div className="text-center text-sm text-[#9CA3AF]">Loading messages...</div> : messages.length === 0 ? <div className="h-full flex items-center justify-center text-sm text-[#9CA3AF]">No messages yet.</div> : messages.map((item) => <div key={item._id} className="bg-white border border-[#E5EAF0] rounded-xl p-4"><div className="flex items-center justify-between gap-3"><p className="text-xs font-semibold text-[#0F1923]">{item.senderRole === "admin" ? `EPR Nexuss → ${item.targetRole === "seller" ? "Seller" : "Buyer"}` : `${item.senderRole === "seller" ? "Seller" : "Buyer"} → EPR Nexuss`}</p><span className="text-[10px] text-[#9CA3AF]">{new Date(item.createdAt).toLocaleString("en-IN")}</span></div><p className="text-sm text-[#374151] mt-2 whitespace-pre-wrap">{item.message}</p></div>)}
           </div>
           <div className="p-4 border-t border-[#E5EAF0] shrink-0"><div className="flex flex-wrap gap-2 mb-2"><button type="button" onClick={() => setTargetRole("buyer")} className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${targetRole === "buyer" ? "bg-[#EBF8EC] border-[#B7DFC0] text-[#2E7D32]" : "border-[#E5EAF0] text-[#6B7280]"}`}>Reply to Buyer</button><button type="button" onClick={() => setTargetRole("seller")} className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${targetRole === "seller" ? "bg-[#EBF8EC] border-[#B7DFC0] text-[#2E7D32]" : "border-[#E5EAF0] text-[#6B7280]"}`}>Reply to Seller</button></div><div className="flex gap-2 items-end"><Textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder={`Message ${targetRole}...`} className="min-h-[70px]" /><Button onClick={send} disabled={sending || !message.trim()}>{sending ? "Sending..." : `Send to ${targetRole === "buyer" ? "Buyer" : "Seller"}`}</Button></div></div>
         </>}

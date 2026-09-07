@@ -1,3 +1,4 @@
+import { toast } from "react-toastify";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { CREDIT_TYPES } from "../data/mock";
@@ -24,6 +25,8 @@ import { DealRoom } from "../components/DealRoom.jsx";
 import { DisputesPage } from "../components/DisputeCenter.jsx";
 import { DealsSection } from "../components/DealsSection.jsx";
 import { TransactionWorkflow } from "../components/TransactionWorkflow.jsx";
+import VerificationStatusBanner from "../components/VerificationStatusBanner.jsx";
+
 function CompactBuyerRequests({
   requests,
   deals,
@@ -36,33 +39,39 @@ function CompactBuyerRequests({
 }) {
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
-  const [expandedId, setExpandedId] = useState(null);
 
   const getState = (request) => {
     const deal = deals.find((item) => String(item.requestId || "") === String(request._id));
-    const status = String(request.status || "").toLowerCase();
+    const status = String(request.status || "pending").toLowerCase();
     const hasQuotation = request.offer?.finalAmount != null;
     const accepted = Boolean(request.offer?.acceptedAt);
-    const closed = ["rejected", "cancelled", "closed", "completed"].includes(status);
 
-    if (closed) {
-      return { key: "closed", label: status === "completed" ? "Completed" : "Closed", next: "No action required", action: null, deal };
+    if (["completed"].includes(status) || deal?.status === "completed") {
+      return { key: "completed", label: "Completed", next: "Everything is done", action: null, deal, step: 5 };
+    }
+    if (["rejected", "cancelled"].includes(status) || ["rejected", "cancelled"].includes(String(deal?.status || "").toLowerCase())) {
+      return { key: "closed", label: status === "rejected" ? "Not approved" : "Cancelled", next: "No action required", action: null, deal, step: 0 };
     }
     if (deal || accepted) {
-      return { key: "deal", label: "Deal created", next: "Continue in Deal Room", action: "deal", deal };
+      return { key: "payment", label: "Payment stage", next: "Continue to payment", action: "deal", deal, step: 4 };
     }
-    if (hasQuotation) {
-      return { key: "quotation", label: "Quotation ready", next: "Review and accept quotation", action: "quotation", deal };
+    if (hasQuotation || ["offer_sent", "approved"].includes(status)) {
+      return { key: "quotation", label: "Quotation ready", next: "Review your quotation", action: "quotation", deal, step: 3 };
     }
-    return { key: "waiting", label: "Waiting", next: "Await quotation", action: null, deal };
+    if (["matched", "negotiating", "reviewing"].includes(status)) {
+      return { key: "matching", label: "Being processed", next: "EPR Nexuss is working on it", action: null, deal, step: 2 };
+    }
+    return { key: "requested", label: "Request sent", next: "Waiting for confirmation", action: null, deal, step: 1 };
   };
 
   const items = requests.map((request) => ({ request, ...getState(request) }));
   const counts = {
     all: items.length,
-    waiting: items.filter((item) => item.key === "waiting").length,
+    requested: items.filter((item) => item.key === "requested").length,
+    matching: items.filter((item) => item.key === "matching").length,
     quotation: items.filter((item) => item.key === "quotation").length,
-    deal: items.filter((item) => item.key === "deal").length,
+    payment: items.filter((item) => item.key === "payment").length,
+    completed: items.filter((item) => item.key === "completed").length,
     closed: items.filter((item) => item.key === "closed").length,
   };
 
@@ -71,79 +80,39 @@ function CompactBuyerRequests({
     const q = query.trim().toLowerCase();
     if (!matchesFilter) return false;
     if (!q) return true;
-    return [
-      request._id,
-      request.listing?.category,
-      request.listing?.location,
-      request.status,
-      label,
-    ].filter(Boolean).join(" ").toLowerCase().includes(q);
+    return [request._id, request.listing?.category, request.listing?.location, request.status, label]
+      .filter(Boolean).join(" ").toLowerCase().includes(q);
   });
 
   const statusClasses = {
-    waiting: "bg-[#FFF7E8] text-[#9A6700] border-[#F4D7A1]",
+    requested: "bg-[#FFF7E8] text-[#9A6700] border-[#F4D7A1]",
+    matching: "bg-[#EEF4FF] text-[#175CD3] border-[#C7D7FE]",
     quotation: "bg-[#ECFDF3] text-[#087443] border-[#B7E4C7]",
-    deal: "bg-[#EEF4FF] text-[#175CD3] border-[#C7D7FE]",
+    payment: "bg-[#F4F3FF] text-[#5925DC] border-[#D9D6FE]",
+    completed: "bg-[#ECFDF3] text-[#067647] border-[#ABEFC6]",
     closed: "bg-[#F2F4F7] text-[#475467] border-[#D0D5DD]",
   };
 
-  if (loading) {
-    return (
-      <Card>
-        <div className="space-y-3 p-5">
-          <div className="h-5 w-36 animate-pulse rounded bg-[#F2F4F7]" />
-          <div className="h-16 animate-pulse rounded-xl bg-[#F8FAFC]" />
-          <div className="h-16 animate-pulse rounded-xl bg-[#F8FAFC]" />
-        </div>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card>
-        <div className="p-8 text-center">
-          <p className="text-sm font-semibold text-[#B42318]">Unable to load requests</p>
-          <p className="mt-1 text-sm text-[#667085]">{error}</p>
-          <Button size="sm" variant="outline" className="mt-4" onClick={onRetry}>Retry</Button>
-        </div>
-      </Card>
-    );
-  }
+  if (loading) return <Card><div className="space-y-3 p-5"><div className="h-5 w-36 animate-pulse rounded bg-[#F2F4F7]" /><div className="h-20 animate-pulse rounded-xl bg-[#F8FAFC]" /><div className="h-20 animate-pulse rounded-xl bg-[#F8FAFC]" /></div></Card>;
+  if (error) return <Card><div className="p-8 text-center"><p className="text-sm font-semibold text-[#B42318]">Unable to load your requests</p><p className="mt-1 text-sm text-[#667085]">{error}</p><Button size="sm" variant="outline" className="mt-4" onClick={onRetry}>Retry</Button></div></Card>;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#98A2B3]">Purchase workflow</p>
-          <h2 className="mt-1 font-heading text-xl font-semibold text-[#101828]">My Requests</h2>
-          <p className="mt-1 text-sm text-[#667085]">Track your requests and see what needs to happen next.</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#98A2B3]">Your requested listings</p>
+          <h2 className="mt-1 font-heading text-2xl font-semibold text-[#101828]">My Requests</h2>
+          <p className="mt-1 max-w-2xl text-sm text-[#667085]">Every credit listing you have requested, with its current status and next step.</p>
         </div>
         <span className="rounded-full bg-[#F2F4F7] px-3 py-1.5 text-xs font-semibold text-[#475467]">{requests.length} request{requests.length === 1 ? "" : "s"}</span>
       </div>
 
       <Card className="overflow-hidden">
-        <div className="border-b border-[#EAECF0] p-3">
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search requests, category, location or ID..."
-            className="w-full rounded-xl border border-[#D0D5DD] bg-[#FCFCFD] px-3.5 py-2.5 text-sm text-[#344054] outline-none placeholder:text-[#98A2B3] focus:border-[#3EA646]"
-          />
+        <div className="border-b border-[#EAECF0] bg-[#FCFCFD] p-4">
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search requested listings..." className="w-full rounded-xl border border-[#D0D5DD] bg-white px-3.5 py-2.5 text-sm text-[#344054] outline-none placeholder:text-[#98A2B3] focus:border-[#3EA646]" />
           <div className="mt-3 flex flex-wrap gap-2">
-            {[
-              ["all", "All"],
-              ["waiting", "Waiting"],
-              ["quotation", "Quotation ready"],
-              ["deal", "Deal created"],
-              ["closed", "Closed"],
-            ].map(([key, label]) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setFilter(key)}
-                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${filter === key ? "bg-[#101828] text-white" : "bg-[#F2F4F7] text-[#475467] hover:bg-[#E4E7EC]"}`}
-              >
+            {[["all","All"],["requested","Requested"],["matching","Processing"],["quotation","Quotation"],["payment","Payment"],["completed","Completed"],["closed","Closed"]].map(([key,label]) => (
+              <button key={key} type="button" onClick={() => setFilter(key)} className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${filter === key ? "bg-[#101828] text-white" : "bg-[#F2F4F7] text-[#475467] hover:bg-[#E4E7EC]"}`}>
                 {label} <span className="ml-1 opacity-70">{counts[key]}</span>
               </button>
             ))}
@@ -151,72 +120,54 @@ function CompactBuyerRequests({
         </div>
 
         {visible.length === 0 ? (
-          <div className="px-6 py-14 text-center">
-            <p className="text-sm font-semibold text-[#344054]">No requests found</p>
-            <p className="mt-1 text-sm text-[#667085]">Try another filter or search term.</p>
-          </div>
+          <div className="px-6 py-14 text-center"><p className="text-sm font-semibold text-[#344054]">No requested listings found</p><p className="mt-1 text-sm text-[#667085]">When you request a listing, it will appear here and stay here until the request is completed or closed.</p></div>
         ) : (
-          <div className="divide-y divide-[#EAECF0]">
-            {visible.map(({ request, key, label, next, action, deal }) => {
+          <div className="space-y-3 p-4 sm:p-5">
+            {visible.map(({ request, key, label, next, action, deal, step }) => {
               const id = request._id;
-              const open = expandedId === id;
               const category = request.listing?.category || "EPR Credit";
               const quantity = request.requestedQuantity ?? 0;
               const price = request.listing?.price;
               const location = request.listing?.location || "—";
+              const steps = ["Request sent", "Being processed", "Quotation", "Payment", "Completed"];
+              const progress = key === "closed" ? 0 : Math.min(5, step);
               return (
-                <div key={id} className="px-4 py-3.5 sm:px-5">
-                  <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_250px_auto] lg:items-center">
-                    <div className="min-w-0">
+                <div key={id} className="rounded-2xl border border-[#EAECF0] bg-white p-4 shadow-sm sm:p-5">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="truncate text-sm font-semibold text-[#101828]">{category}</h3>
+                        <span className="rounded-lg bg-[#EEF8EF] px-2.5 py-1 text-[11px] font-bold text-[#247A2B]">REQUESTED LISTING</span>
                         <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${statusClasses[key]}`}>{label}</span>
                       </div>
-                      <p className="mt-1 text-xs text-[#667085]">#{String(id).slice(-8)} · {Number(quantity).toLocaleString("en-IN")} MT · {location}</p>
+                      <h3 className="mt-2 text-base font-semibold text-[#101828]">{category}</h3>
+                      <p className="mt-1 text-xs text-[#667085]">Request #{String(id).slice(-8)} · {Number(quantity).toLocaleString("en-IN")} MT · {location}</p>
                       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#667085]">
-                        {price != null && <span>₹{Number(price).toLocaleString("en-IN")}/MT</span>}
+                        {price != null && <span>Listed price ₹{Number(price).toLocaleString("en-IN")}/MT</span>}
                         {request.listing?.complianceYear && <span>FY {request.listing.complianceYear}</span>}
-                        {request.createdAt && <span>{new Date(request.createdAt).toLocaleDateString("en-IN")}</span>}
+                        {request.createdAt && <span>Requested {new Date(request.createdAt).toLocaleDateString("en-IN")}</span>}
                       </div>
                     </div>
-
-                    <div className="rounded-xl bg-[#F8FAFC] px-3 py-2.5">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#98A2B3]">Next step</p>
-                      <p className="mt-0.5 text-xs font-semibold text-[#344054]">{next}</p>
-                    </div>
-
-                    <div className="flex items-center gap-2 lg:justify-end">
-                      <button type="button" onClick={() => setExpandedId(open ? null : id)} className="rounded-lg border border-[#D0D5DD] px-3 py-2 text-xs font-semibold text-[#475467] hover:bg-[#F9FAFB]">
-                        {open ? "Hide" : "Details"}
-                      </button>
-                      {action === "quotation" && (
-                        <Button size="sm" onClick={() => onOpenQuotation(request)}>Review quotation →</Button>
-                      )}
-                      {action === "deal" && deal && (
-                        <Button size="sm" onClick={() => onOpenDeals(deal)}>Open Deal Room →</Button>
-                      )}
+                    <div className="flex shrink-0 flex-wrap gap-2 lg:justify-end">
+                      {action === "quotation" && <Button size="sm" onClick={() => onOpenQuotation(request)}>Review quotation →</Button>}
+                      {action === "deal" && deal && <Button size="sm" onClick={() => onOpenDeals(deal)}>Continue →</Button>}
+                      <button type="button" onClick={() => onOpenMessages()} className="rounded-lg border border-[#D0D5DD] px-3 py-2 text-xs font-semibold text-[#475467] hover:bg-[#F9FAFB]">Messages</button>
                     </div>
                   </div>
 
-                  {open && (
-                    <div className="mt-3 grid gap-3 rounded-xl border border-[#EAECF0] bg-[#FCFCFD] p-3 sm:grid-cols-2 lg:grid-cols-4">
-                      <div><p className="text-[10px] uppercase tracking-wider text-[#98A2B3]">Quantity</p><p className="mt-1 text-sm font-medium text-[#344054]">{Number(quantity).toLocaleString("en-IN")} MT</p></div>
-                      <div><p className="text-[10px] uppercase tracking-wider text-[#98A2B3]">Location</p><p className="mt-1 text-sm font-medium text-[#344054]">{location}</p></div>
-                      <div><p className="text-[10px] uppercase tracking-wider text-[#98A2B3]">Valid till</p><p className="mt-1 text-sm font-medium text-[#344054]">{request.listing?.validTill ? new Date(request.listing.validTill).toLocaleDateString("en-IN") : "—"}</p></div>
-                      <div><p className="text-[10px] uppercase tracking-wider text-[#98A2B3]">Status</p><p className="mt-1 text-sm font-medium text-[#344054]">{label}</p></div>
-                      {request.notes && <div className="sm:col-span-2 lg:col-span-4"><p className="text-[10px] uppercase tracking-wider text-[#98A2B3]">Your notes</p><p className="mt-1 text-sm text-[#475467]">{request.notes}</p></div>}
-                      {request.rejectionReason && <div className="sm:col-span-2 lg:col-span-4 rounded-lg bg-[#FEF3F2] p-3"><p className="text-xs font-semibold text-[#B42318]">Rejection reason</p><p className="mt-1 text-sm text-[#B42318]">{request.rejectionReason}</p></div>}
-                      <div className="sm:col-span-2 lg:col-span-4">
-                        <MessageChat requestId={request._id} role="buyer" compact onRead={() => {}} />
-                      </div>
-                      <div className="sm:col-span-2 lg:col-span-4">
-                        <TransactionWorkflow request={request} deal={deal} role="buyer" onNext={(stage) => stage === "quotation" ? onOpenQuotation(request) : deal && onOpenDeals(deal)} />
-                      </div>
-                      <div className="sm:col-span-2 lg:col-span-4 text-right">
-                        <button type="button" onClick={() => onOpenMessages()} className="text-xs font-semibold text-[#344054] hover:underline">Open messages</button>
+                  {key !== "closed" && (
+                    <div className="mt-5 rounded-xl border border-[#EAECF0] bg-[#FCFCFD] p-3.5 sm:p-4">
+                      <div className="mb-3 flex items-center justify-between gap-3"><p className="text-xs font-semibold text-[#344054]">Request status</p><p className="text-xs font-medium text-[#667085]">{next}</p></div>
+                      <div className="grid grid-cols-5 gap-1">
+                        {steps.map((item, index) => {
+                          const done = index < progress;
+                          const current = index === progress - 1;
+                          return <div key={item} className="min-w-0"><div className={`mx-auto flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold ${done ? "bg-[#3EA646] text-white" : "bg-[#EAECF0] text-[#98A2B3]"}`}>{done ? "✓" : index + 1}</div><p className={`mt-1 text-center text-[9px] leading-3 sm:text-[10px] ${current ? "font-bold text-[#247A2B]" : "text-[#98A2B3]"}`}>{item}</p></div>;
+                        })}
                       </div>
                     </div>
                   )}
+
+                  {(request.notes || request.rejectionReason) && <div className="mt-3 grid gap-3 sm:grid-cols-2"><div className="rounded-xl bg-[#F8FAFC] p-3"><p className="text-[10px] font-bold uppercase tracking-wider text-[#98A2B3]">Your notes</p><p className="mt-1 text-xs text-[#475467]">{request.notes || "—"}</p></div>{request.rejectionReason && <div className="rounded-xl bg-[#FEF3F2] p-3"><p className="text-[10px] font-bold uppercase tracking-wider text-[#B42318]">Reason</p><p className="mt-1 text-xs text-[#B42318]">{request.rejectionReason}</p></div>}</div>}
                 </div>
               );
             })}
@@ -457,7 +408,7 @@ function PostRequirementModal({ onClose, onCreated }) {
             Requirement Posted!
           </h3>
           <p className="text-sm text-[#6B7280] mb-5">
-            EPR Nexus will match you with suitable verified sellers and reach
+            EPR Nexuss will match you with suitable verified sellers and reach
             out within 24–48 hours.
           </p>
           <Button onClick={onClose} className="w-full">
@@ -742,7 +693,7 @@ function BuyerDashboard({ onNavigate }) {
         current.filter((listing) => String(listing._id) !== String(listingId)),
       );
     } catch (error) {
-      alert(
+      toast.error(
         error.response?.data?.message ||
           "Failed to remove listing from watchlist.",
       );
@@ -1164,6 +1115,8 @@ function BuyerDashboard({ onNavigate }) {
         titleFallback="Buyer Dashboard"
         variant="light"
       >
+        <VerificationStatusBanner onNavigate={onNavigate} />
+
         {active === "dashboard" && (
           <div className="space-y-6">
             <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
@@ -1448,7 +1401,7 @@ function BuyerDashboard({ onNavigate }) {
                                 Unread deal messages
                               </p>
                               <p className="text-xs text-[#9CA3AF] mt-0.5">
-                                Check messages from EPR Nexus or transaction
+                                Check messages from EPR Nexuss or transaction
                                 participants.
                               </p>
                             </div>
@@ -1500,7 +1453,7 @@ function BuyerDashboard({ onNavigate }) {
                       No requirements yet
                     </p>
                     <p className="text-xs text-[#9CA3AF] mt-1">
-                      Post what you need and EPR Nexus can match it with
+                      Post what you need and EPR Nexuss can match it with
                       suitable sellers.
                     </p>
                     <Button
@@ -1633,7 +1586,7 @@ function BuyerDashboard({ onNavigate }) {
               </svg>
               <span>
                 Contact details are hidden. All communication is routed through
-                EPR Nexus. You are identified as{" "}
+                EPR Nexuss. You are identified as{" "}
                 <strong className="mx-1">{buyerCompany}</strong> on the
                 marketplace.
               </span>
@@ -1674,7 +1627,7 @@ function BuyerDashboard({ onNavigate }) {
                   No requirements yet
                 </p>
                 <p className="text-sm mt-1">
-                  Post a requirement and EPR Nexus will help match it with
+                  Post a requirement and EPR Nexuss will help match it with
                   verified sellers.
                 </p>
               </div>
@@ -1740,7 +1693,7 @@ function BuyerDashboard({ onNavigate }) {
                   Matching Opportunities
                 </h2>
                 <p className="mt-1 max-w-2xl text-sm leading-6 text-[#667085]">
-                  EPR Nexus compares your active requirements with verified
+                  EPR Nexuss compares your active requirements with verified
                   seller listings and surfaces opportunities that fit your
                   budget, location, quantity, and compliance year.
                 </p>
@@ -2021,7 +1974,7 @@ function BuyerDashboard({ onNavigate }) {
                   Quotations
                 </h2>
                 <p className="mt-1 text-sm text-[#667085]">
-                  Review offers from EPR Nexus and continue directly to your deal.
+                  Review offers from EPR Nexuss and continue directly to your deal.
                 </p>
               </div>
               <span className="rounded-full bg-[#F2F4F7] px-3 py-1.5 text-xs font-semibold text-[#475467]">
@@ -2056,7 +2009,7 @@ function BuyerDashboard({ onNavigate }) {
                   </div>
                   <p className="mt-4 font-heading text-sm font-semibold text-[#344054]">No quotations yet</p>
                   <p className="mt-1 max-w-md text-sm text-[#667085]">
-                    Once EPR Nexus issues a commercial quotation for one of your requests, it will appear here.
+                    Once EPR Nexuss issues a commercial quotation for one of your requests, it will appear here.
                   </p>
                   <Button size="sm" variant="outline" className="mt-4" onClick={() => setActive("requests")}>
                     View my requests
@@ -2126,7 +2079,7 @@ function BuyerDashboard({ onNavigate }) {
                                 {requestCompleted ? "Transaction completed" : accepted ? "Quotation accepted" : expired ? "Quotation expired" : "Next step: review and accept"}
                               </p>
                               <p className="mt-0.5 text-xs text-[#667085]">
-                                {requestCompleted ? "This request is closed. The quotation is no longer actionable." : accepted ? "Continue in your Deal Room to complete the transaction." : expired ? "Contact EPR Nexus if you need a revised quotation." : "Commercial terms are locked once you accept."}
+                                {requestCompleted ? "This request is closed. The quotation is no longer actionable." : accepted ? "Continue in your Deal Room to complete the transaction." : expired ? "Contact EPR Nexuss if you need a revised quotation." : "Commercial terms are locked once you accept."}
                               </p>
                             </div>
                             <div className="flex flex-wrap gap-2">
@@ -2141,7 +2094,7 @@ function BuyerDashboard({ onNavigate }) {
                                         openDealRoom(response.data.deal, "overview");
                                       }
                                     } catch (error) {
-                                      alert(error.response?.data?.message || "Unable to accept this quotation.");
+                                      toast.error(error.response?.data?.message || "Unable to accept this quotation.");
                                     }
                                   }}
                                 >
@@ -2379,7 +2332,7 @@ function BuyerDashboard({ onNavigate }) {
             <div className="px-5 py-4 border-b border-[#E5EAF0]">
               <h2 className="font-semibold text-[#0F1923]">Messages</h2>
               <p className="text-xs text-[#9CA3AF] mt-1">
-                Private communication with EPR Nexus. Quotations are shown
+                Private communication with EPR Nexuss. Quotations are shown
                 separately in Quotations.
               </p>
             </div>

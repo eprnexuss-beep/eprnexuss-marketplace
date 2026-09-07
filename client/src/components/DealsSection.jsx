@@ -39,7 +39,7 @@ function getNextStep(deal, role) {
       return { label: "Continue in Deal Room", detail: "Review the deal and complete the next transaction step." };
     }
     if (deal.paymentStatus === "received") {
-      return { label: "Payment confirmed", detail: "EPR Nexus is completing the transaction." };
+      return { label: "Payment confirmed", detail: "EPR Nexuss is completing the transaction." };
     }
     return { label: "Open Deal Room", detail: "Review Payment & Invoice and continue the transaction." };
   }
@@ -123,7 +123,7 @@ function CompactDealCard({ deal, role, openDealId, openDealTab, onOpenDealRoom, 
             <p className="mt-1 text-sm font-semibold text-[#344054]">{money(creditValue)}</p>
           </div>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#98A2B3]">EPR Nexus fee</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#98A2B3]">EPR Nexuss fee</p>
             <p className="mt-1 text-sm font-semibold text-[#344054]">{money(fee)}</p>
           </div>
           <div>

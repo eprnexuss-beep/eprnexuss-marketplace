@@ -1,3 +1,4 @@
+import { toast } from "react-toastify";
 import { useEffect, useMemo, useState } from "react";
 import { CREDIT_TYPES } from "../data/mock";
 import { Badge, CreditTypeIcon } from "../components/ui";
@@ -91,7 +92,7 @@ function MarketplacePage({ onNavigate }) {
         setWatchlistIds((current) => new Set([...current, id]));
       }
     } catch (err) {
-      alert(err.response?.data?.message || (saved ? "Failed to remove listing from watchlist." : "Failed to save listing."));
+      toast.error(err.response?.data?.message || (saved ? "Failed to remove listing from watchlist." : "Failed to save listing."));
     } finally {
       setWatchlistBusyId("");
     }
@@ -132,7 +133,7 @@ function MarketplacePage({ onNavigate }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#F6F8FA] text-[#101828]">
+    <div className="pro-page min-h-screen bg-[#F6F8FA] text-[#101828]">
       <div className="relative overflow-hidden bg-[#0B1512] text-white">
         <div className="absolute -right-24 -top-32 h-80 w-80 rounded-full bg-[#5AC361]/20 blur-3xl" />
         <div className="absolute -bottom-40 left-1/4 h-72 w-72 rounded-full bg-[#5AC361]/10 blur-3xl" />
@@ -148,7 +149,7 @@ function MarketplacePage({ onNavigate }) {
                 <span className="block text-[#7BE082]">Trade with confidence.</span>
               </h1>
               <p className="mt-4 max-w-xl text-sm leading-6 text-white/65 sm:text-base">
-                Discover active EPR credit listings from verified businesses, compare transparent pricing, and let EPR Nexus facilitate the deal.
+                Discover active EPR credit listings from verified businesses, compare transparent pricing, and let EPR Nexuss facilitate the deal.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:min-w-[390px]">
@@ -205,7 +206,7 @@ function MarketplacePage({ onNavigate }) {
             </div>
             <div className="flex items-center gap-2 text-xs text-[#667085]">
               <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-[#E5EAF0]"><Icon><path d="M12 3v18M3 12h18" /></Icon></span>
-              EPR Nexus mediated transactions
+              EPR Nexuss mediated transactions
             </div>
           </div>
 
@@ -232,7 +233,7 @@ function MarketplacePage({ onNavigate }) {
                 VERIFIED · MEDIATED · TRACEABLE
               </div>
               <h3 className="font-heading text-xl font-bold tracking-[-0.02em] text-[#16351A] sm:text-2xl">A marketplace built around trust.</h3>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-[#4B6350]">Every transaction stays within the EPR Nexus workflow. Seller verification, documentation, negotiation, payment coordination and completion are handled through the platform.</p>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-[#4B6350]">Every transaction stays within the EPR Nexuss workflow. Seller verification, documentation, negotiation, payment coordination and completion are handled through the platform.</p>
             </div>
             <div className="flex items-center border-t border-[#D4EAD7] p-6 lg:border-l lg:border-t-0 lg:px-8">
               <button type="button" onClick={() => onNavigate("home")} className="inline-flex items-center gap-2 rounded-xl bg-[#15351A] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#102A14]">

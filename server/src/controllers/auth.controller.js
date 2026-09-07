@@ -184,7 +184,6 @@ export const registerUser = async (req, res) => {
       email: user.email,
       name: user.name,
       role: user.role,
-      developmentVerificationUrl: null,
     });
   } catch (error) {
     console.error("Register error:", error);
@@ -556,12 +555,7 @@ export const resendVerificationEmail = async (req, res) => {
       success: true,
       message: emailResult.sent
         ? "A new verification email has been sent"
-        : "Verification email service is not configured",
-      developmentVerificationUrl:
-        process.env.NODE_ENV !== "production"
-          ? emailResult.verificationUrl
-          : null,
-    });
+        : "Verification email service is not configured",    });
   } catch (error) {
     console.error("Resend verification error:", error);
 
@@ -608,12 +602,7 @@ export const resendSignupVerification = async (req, res) => {
       success: true,
       message: emailResult.sent
         ? "A new verification email has been sent"
-        : "Verification email service is not configured",
-      developmentVerificationUrl:
-        process.env.NODE_ENV !== "production"
-          ? emailResult.verificationUrl
-          : null,
-    });
+        : "Verification email service is not configured",    });
   } catch (error) {
     console.error("Signup resend verification error:", error);
 
@@ -681,7 +670,6 @@ export const changeSignupEmail = async (req, res) => {
       email: user.email,
       message: "Email updated. You can now send a verification email.",
       emailVerificationSent: false,
-      developmentVerificationUrl: null,
     });
   } catch (error) {
     console.error("Change signup email error:", error);
@@ -739,14 +727,6 @@ export const forgotPassword = async (req, res) => {
       name: user.name,
       token: rawToken,
     });
-
-    // Development-only convenience. Never expose reset tokens in production.
-    if (process.env.NODE_ENV !== "production" && !emailResult.sent) {
-      return res.status(200).json({
-        ...genericResponse,
-        developmentResetUrl: emailResult.resetUrl,
-      });
-    }
 
     return res.status(200).json(genericResponse);
   } catch (error) {

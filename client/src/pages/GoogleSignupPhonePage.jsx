@@ -16,7 +16,7 @@ function GoogleSignupPhonePage({ onNavigate }) {
 
   if (!pendingGoogleSignup?.profile) {
     return (
-      <div className="min-h-screen bg-[#F7F9FB] flex items-center justify-center px-4">
+      <div className="pro-page min-h-screen bg-[#F7F9FB] flex items-center justify-center px-4">
         <div className="bg-white border border-[#E5EAF0] rounded-2xl shadow-sm p-7 max-w-md w-full text-center">
           <h1 className="text-xl font-bold text-[#0F1923]">
             Google signup session expired
@@ -82,7 +82,7 @@ function GoogleSignupPhonePage({ onNavigate }) {
           </h1>
           <p className="text-sm text-[#6B7280] mt-2">
             Google has already provided your name and verified email. We only
-            need your phone number and account type to create your EPR Nexus
+            need your phone number and account type to create your EPR Nexuss
             profile.
           </p>
 

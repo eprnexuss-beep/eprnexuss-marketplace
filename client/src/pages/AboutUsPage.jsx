@@ -27,12 +27,12 @@ function AboutUsPage({ onNavigate }) {
               <span className="h-1.5 w-1.5 rounded-full bg-[#5AC361]" />
               ABOUT EPR NEXUS
             </div>
-            <h1 className="max-w-3xl text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl" style={{ fontFamily: 'Outfit, sans-serif' }}>
+            <h1 className="max-w-3xl text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">
               Building the trust layer for
               <span className="block text-[#5AC361]">EPR credit transactions.</span>
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-7 text-white/65 sm:text-lg">
-              EPR Nexus is a broker-assisted B2B marketplace designed to connect compliance-driven buyers with verified sellers of EPR credits through a transparent, mediated, and auditable process.
+              EPR Nexuss is a broker-assisted B2B marketplace designed to connect compliance-driven buyers with verified sellers of EPR credits through a transparent, mediated, and auditable process.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <button type="button" onClick={() => onNavigate('marketplace')} className="inline-flex items-center gap-2 rounded-xl bg-[#5AC361] px-5 py-3 text-sm font-semibold text-[#07120A] shadow-[0_12px_30px_rgba(90,195,97,0.18)] transition hover:bg-[#71D178]">
@@ -95,7 +95,7 @@ function AboutUsPage({ onNavigate }) {
           <div className="grid gap-12 lg:grid-cols-[.85fr_1.15fr] lg:items-start">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#3EA646]">Our purpose</p>
-              <h2 className="mt-3 text-3xl font-bold tracking-tight text-[#101820] sm:text-4xl" style={{ fontFamily: 'Outfit, sans-serif' }}>
+              <h2 className="mt-3 text-3xl font-bold tracking-tight text-[#101820] sm:text-4xl">
                 Make EPR credit trading more trustworthy.
               </h2>
             </div>
@@ -121,15 +121,15 @@ function AboutUsPage({ onNavigate }) {
       <section className="bg-[#F7F9FB]">
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 md:py-20 lg:px-8">
           <div className="max-w-2xl">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#3EA646]">Why EPR Nexus</p>
-            <h2 className="mt-3 text-3xl font-bold tracking-tight text-[#101820] sm:text-4xl" style={{ fontFamily: 'Outfit, sans-serif' }}>Not another classifieds marketplace.</h2>
-            <p className="mt-4 text-base leading-7 text-[#667085]">Our model is intentionally closer to a brokerage: EPR Nexus remains the point of trust throughout the transaction rather than simply publishing contact details and stepping away.</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#3EA646]">Why EPR Nexuss</p>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight text-[#101820] sm:text-4xl">Not another classifieds marketplace.</h2>
+            <p className="mt-4 text-base leading-7 text-[#667085]">Our model is intentionally closer to a brokerage: EPR Nexuss remains the point of trust throughout the transaction rather than simply publishing contact details and stepping away.</p>
           </div>
 
           <div className="mt-10 grid gap-4 md:grid-cols-3">
             {[
               { number: '01', title: 'Verify before visibility', text: 'Seller KYC and supporting documents are part of the listing approval process before credits become marketplace supply.' },
-              { number: '02', title: 'Mediate every deal', text: 'Buyer and seller contact details stay controlled while the EPR Nexus team coordinates requests, negotiation and documentation.' },
+              { number: '02', title: 'Mediate every deal', text: 'Buyer and seller contact details stay controlled while the EPR Nexuss team coordinates requests, negotiation and documentation.' },
               { number: '03', title: 'Track the full lifecycle', text: 'The platform is designed to follow a transaction from listing and request to payment coordination, completion and reporting.' },
             ].map((item) => (
               <div key={item.number} className="group rounded-2xl border border-[#E5EAF0] bg-white p-6 transition hover:-translate-y-1 hover:shadow-lg">
@@ -148,18 +148,18 @@ function AboutUsPage({ onNavigate }) {
           <div className="grid gap-5 lg:grid-cols-2">
             <div className="rounded-3xl bg-[#0B171D] p-7 text-white sm:p-9">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#5AC361]">For buyers</p>
-              <h3 className="mt-3 text-2xl font-bold" style={{ fontFamily: 'Outfit, sans-serif' }}>Find verified supply when compliance matters.</h3>
+              <h3 className="mt-3 text-2xl font-bold">Find verified supply when compliance matters.</h3>
               <p className="mt-4 text-sm leading-6 text-white/60">Built for producers, importers, brand owners and compliance or sustainability teams that need EPR credits and want a single point of contact for verification, negotiation and payment coordination.</p>
               <ul className="mt-6 space-y-3 text-sm text-white/75">
-                {['Search verified marketplace supply', 'Post a specific purchase requirement', 'Request credits through EPR Nexus', 'Track negotiation and deal progress'].map((item) => <li key={item} className="flex gap-2"><span className="mt-1 text-[#5AC361]">✓</span>{item}</li>)}
+                {['Search verified marketplace supply', 'Post a specific purchase requirement', 'Request credits through EPR Nexuss', 'Track negotiation and deal progress'].map((item) => <li key={item} className="flex gap-2"><span className="mt-1 text-[#5AC361]">✓</span>{item}</li>)}
               </ul>
             </div>
             <div className="rounded-3xl border border-[#E5EAF0] bg-[#F8FAFC] p-7 sm:p-9">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#3EA646]">For sellers</p>
-              <h3 className="mt-3 text-2xl font-bold text-[#101820]" style={{ fontFamily: 'Outfit, sans-serif' }}>Turn surplus verified credits into organized demand.</h3>
+              <h3 className="mt-3 text-2xl font-bold text-[#101820]">Turn surplus verified credits into organized demand.</h3>
               <p className="mt-4 text-sm leading-6 text-[#667085]">Designed for registered recyclers, plastic waste processors, PROs and other eligible businesses with surplus certified EPR credits.</p>
               <ul className="mt-6 space-y-3 text-sm text-[#475467]">
-                {['Complete KYC and verification', 'List available EPR credits', 'Build credibility with verified status', 'Let EPR Nexus coordinate the transaction'].map((item) => <li key={item} className="flex gap-2"><span className="mt-1 font-bold text-[#3EA646]">✓</span>{item}</li>)}
+                {['Complete KYC and verification', 'List available EPR credits', 'Build credibility with verified status', 'Let EPR Nexuss coordinate the transaction'].map((item) => <li key={item} className="flex gap-2"><span className="mt-1 font-bold text-[#3EA646]">✓</span>{item}</li>)}
               </ul>
             </div>
           </div>
@@ -171,7 +171,7 @@ function AboutUsPage({ onNavigate }) {
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 md:py-20 lg:px-8">
           <div className="text-center">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#3EA646]">What we stand for</p>
-            <h2 className="mt-3 text-3xl font-bold tracking-tight text-[#101820] sm:text-4xl" style={{ fontFamily: 'Outfit, sans-serif' }}>Trust is the product.</h2>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight text-[#101820] sm:text-4xl">Trust is the product.</h2>
           </div>
           <div className="mx-auto mt-10 grid max-w-5xl gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
@@ -195,7 +195,7 @@ function AboutUsPage({ onNavigate }) {
         <div className="mx-auto flex max-w-7xl flex-col gap-7 px-4 py-14 sm:px-6 md:flex-row md:items-center md:justify-between md:py-16 lg:px-8">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#5AC361]">Ready to work with us?</p>
-            <h2 className="mt-2 text-3xl font-bold tracking-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>Explore a more structured EPR credit market.</h2>
+            <h2 className="mt-2 text-3xl font-bold tracking-tight">Explore a more structured EPR credit market.</h2>
           </div>
           <div className="flex flex-wrap gap-3">
             <button type="button" onClick={() => onNavigate('marketplace')} className="rounded-xl bg-[#5AC361] px-5 py-3 text-sm font-semibold text-[#07120A] transition hover:bg-[#71D178]">Browse credits</button>

@@ -89,7 +89,7 @@ function Button({
 }) {
   return (
     <button
-      className={`${btnBase} ${btnVariants[variant] ?? btnVariants.primary} ${btnSizes[size] ?? btnSizes.md} ${className}`}
+      className={`ui-button ${btnBase} ${btnVariants[variant] ?? btnVariants.primary} ${btnSizes[size] ?? btnSizes.md} ${className}`}
       {...props}
     >
       {children}
@@ -100,7 +100,7 @@ function Button({
 function Card({ children, className = "", interactive = false, ...props }) {
   return (
     <div
-      className={`rounded-xl border border-[#E5EAF0] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.03)] ${
+      className={`ui-card rounded-xl border border-[#E5EAF0] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.03)] ${
         interactive
           ? "transition-all duration-150 hover:-translate-y-px hover:border-[#D5DEE7] hover:shadow-[0_6px_18px_rgba(16,24,40,0.06)]"
           : ""
@@ -461,7 +461,7 @@ function DashboardShell({
   const dark = variant === "dark";
   const activeItem = nav.find((item) => item.id === active);
   const sidebarClasses = dark
-    ? "bg-[#0F1923] border-white/10 text-white"
+    ? "!bg-[#0F1923] !border-white/10 !text-white"
     : "bg-white border-[#E5EAF0] text-[#0F1923]";
 
   const closeSidebar = () => setSidebarOpen(false);
@@ -472,13 +472,14 @@ function DashboardShell({
 
   return (
     <div
-      className={`min-h-screen flex ${dark ? "bg-[#F7F9FB]" : "bg-[#F7F9FB]"}`}
+      className={`dashboard-shell min-h-screen flex ${dark ? "bg-[#F7F9FB]" : "bg-[#F7F9FB]"}`}
     >
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-[272px] flex-col border-r shadow-[8px_0_24px_rgba(15,25,35,0.04)] transition-transform duration-200 md:translate-x-0 md:shadow-none ${
+        className={`dashboard-sidebar fixed inset-y-0 left-0 z-40 flex w-[252px] flex-col border-r shadow-[8px_0_24px_rgba(15,25,35,0.04)] transition-transform duration-200 md:translate-x-0 md:shadow-none ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         } ${sidebarClasses}`}
         aria-label={`${roleLabel || "Application"} navigation`}
+        style={dark ? { backgroundColor: "#0F1923", color: "#FFFFFF" } : undefined}
       >
         <div
           className={`flex h-[72px] items-center gap-3 border-b px-5 ${dark ? "border-white/10" : "border-[#E5EAF0]"}`}
@@ -503,7 +504,7 @@ function DashboardShell({
             <p
               className={`font-heading text-sm font-bold leading-none ${dark ? "text-white" : "text-[#0F1923]"}`}
             >
-              EPR Nexus
+              EPR Nexuss
             </p>
             <p
               className={`mt-1 text-[10px] leading-none ${dark ? "text-white/45" : "text-[#8A94A3]"}`}
@@ -555,13 +556,13 @@ function DashboardShell({
                   key={item.id}
                   type="button"
                   onClick={() => handleActiveChange(item.id)}
-                  className={`group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5AC361] focus-visible:ring-offset-1 ${
+                  className={`dashboard-nav-item group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-all ${isActive ? "is-active" : ""} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5AC361] focus-visible:ring-offset-1 ${
                     isActive
                       ? dark
-                        ? "bg-[#5AC361] text-white shadow-sm"
+                        ? "!bg-[#5AC361] !text-white shadow-sm"
                         : "bg-[#EBF8EC] text-[#26702B]"
                       : dark
-                        ? "text-white/60 hover:bg-white/10 hover:text-white"
+                        ? "!text-white/60 hover:!bg-white/10 hover:!text-white"
                         : "text-[#667085] hover:bg-[#F7F9FB] hover:text-[#1F2937]"
                   }`}
                 >
@@ -626,8 +627,8 @@ function DashboardShell({
         />
       )}
 
-      <main className="min-w-0 flex-1 md:ml-[272px]">
-        <header className="sticky top-0 z-20 flex min-h-[72px] items-center justify-between gap-3 border-b border-[#E5EAF0] bg-white/95 px-4 backdrop-blur-md sm:px-6 lg:px-8">
+      <main className="dashboard-main min-w-0 flex-1 md:ml-[252px]">
+        <header className="dashboard-header sticky top-0 z-20 flex min-h-[72px] items-center justify-between gap-3 border-b border-[#E5EAF0] bg-white/95 px-4 backdrop-blur-md sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-3">
             <button
               type="button"
@@ -663,8 +664,67 @@ function DashboardShell({
             {actions}
           </div>
         </header>
-        <div className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8">{children}</div>
+        <div className="dashboard-content px-4 py-6 sm:px-6 sm:py-7 lg:px-8">{children}</div>
       </main>
+    </div>
+  );
+}
+
+
+function PromptModal({
+  open,
+  title = "Enter a reason",
+  description = "Provide a short reason to continue.",
+  value,
+  onChange,
+  onCancel,
+  onConfirm,
+  confirmLabel = "Continue",
+  placeholder = "Enter reason...",
+}) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[140] flex items-center justify-center bg-[#101828]/45 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-[#E4E9EE] bg-white shadow-[0_24px_70px_rgba(16,24,40,0.18)]">
+        <div className="border-b border-[#E4E9EE] px-5 py-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#98A2B3]">
+                Confirmation required
+              </p>
+              <h3 className="mt-1 font-heading text-lg font-semibold text-[#101828]">{title}</h3>
+              <p className="mt-1 text-sm leading-5 text-[#667085]">{description}</p>
+            </div>
+            <button
+              type="button"
+              onClick={onCancel}
+              className="rounded-lg p-2 text-[#667085] transition-colors hover:bg-[#F2F4F7] hover:text-[#344054]"
+              aria-label="Close"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div className="p-5">
+          <textarea
+            autoFocus
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            placeholder={placeholder}
+            rows={4}
+            className="w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-3.5 py-3 text-sm text-[#344054] outline-none transition focus:border-[#5AC361] focus:ring-3 focus:ring-[#5AC361]/10"
+          />
+          <div className="mt-4 flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
+            <Button variant="danger" size="sm" onClick={onConfirm} disabled={!String(value || "").trim()}>
+              {confirmLabel}
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -707,6 +767,7 @@ export {
   EmptyState,
   Input,
   PageHeader,
+  PromptModal,
   SectionHeader,
   Select,
   StatCard,

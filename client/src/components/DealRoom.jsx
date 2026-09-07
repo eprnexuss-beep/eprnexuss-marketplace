@@ -197,7 +197,7 @@ function MessageThread({ dealId, role }) {
                 No deal messages yet
               </p>
               <p className="mt-1 text-xs text-[#98A2B3]">
-                Use this thread to coordinate the transaction with EPR Nexus.
+                Use this thread to coordinate the transaction with EPR Nexuss.
               </p>
             </div>
           </div>
@@ -220,7 +220,7 @@ function MessageThread({ dealId, role }) {
                     {item.senderId?.company ||
                       item.senderId?.name ||
                       item.senderRole ||
-                      "EPR Nexus"}
+                      "EPR Nexuss"}
                   </p>
                   <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed">
                     {item.message}
@@ -243,7 +243,7 @@ function MessageThread({ dealId, role }) {
           <Textarea
             value={message}
             onChange={(event) => setMessage(event.target.value)}
-            placeholder="Ask EPR Nexus about payment, documents or transaction coordination…"
+            placeholder="Ask EPR Nexuss about payment, documents or transaction coordination…"
             className="min-h-[76px] flex-1"
             maxLength={2000}
           />
@@ -352,11 +352,11 @@ function PaymentPanel({ deal, role, onDealUpdate }) {
     win.document
       .write(`<!doctype html><html><head><title>${escapeHtml(invoice.invoiceNumber)}</title>
       <style>body{font-family:Arial,sans-serif;color:#101828;padding:40px}h1{margin:0 0 6px}.muted{color:#667085}.grid{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin:28px 0}table{width:100%;border-collapse:collapse;margin-top:28px}th,td{border-bottom:1px solid #e5eaf0;padding:12px;text-align:left}th{font-size:12px;color:#667085;text-transform:uppercase}.totals{margin-left:auto;width:320px;margin-top:24px}.row{display:flex;justify-content:space-between;padding:7px 0}.total{font-size:18px;font-weight:700;border-top:2px solid #101828;margin-top:8px;padding-top:12px}</style>
-      </head><body><h1>EPR Nexus</h1><div class="muted">Invoice ${escapeHtml(invoice.invoiceNumber)}</div>
+      </head><body><h1>EPR Nexuss</h1><div class="muted">Invoice ${escapeHtml(invoice.invoiceNumber)}</div>
       <div class="grid"><div><strong>Bill to</strong><p>${escapeHtml(buyer.company || buyer.name)}</p><p class="muted">${escapeHtml(buyer.email)}</p></div>
       <div><strong>Seller</strong><p>${escapeHtml(seller.company || seller.name)}</p><p class="muted">${escapeHtml(seller.email)}</p></div></div>
       <table><thead><tr><th>Description</th><th>Qty</th><th>Unit price</th><th>Amount</th></tr></thead><tbody>${itemRows}</tbody></table>
-      <div class="totals"><div class="row"><span>Subtotal</span><strong>₹${Number(invoice.subtotal || 0).toLocaleString("en-IN")}</strong></div><div class="row"><span>EPR Nexus fee</span><strong>₹${Number(invoice.serviceFee || 0).toLocaleString("en-IN")}</strong></div><div class="row total"><span>Total</span><strong>₹${Number(invoice.total || 0).toLocaleString("en-IN")}</strong></div></div>
+      <div class="totals"><div class="row"><span>Subtotal</span><strong>₹${Number(invoice.subtotal || 0).toLocaleString("en-IN")}</strong></div><div class="row"><span>EPR Nexuss fee</span><strong>₹${Number(invoice.serviceFee || 0).toLocaleString("en-IN")}</strong></div><div class="row total"><span>Total</span><strong>₹${Number(invoice.total || 0).toLocaleString("en-IN")}</strong></div></div>
       <p class="muted">Issued ${new Date(invoice.issuedAt).toLocaleDateString("en-IN")} · Status ${escapeHtml(invoice.status)}</p>
       <script>window.onload=function(){window.print();}</script></body></html>`);
     win.document.close();
@@ -381,7 +381,7 @@ function PaymentPanel({ deal, role, onDealUpdate }) {
   return (
     <div className="space-y-6">
       {error ? (
-        <Card className="border-[#FECACA] bg-[#FFF7F7]">
+        <Card className="ui-card border-[#FECACA] bg-[#FFF7F7]">
           <p className="text-sm font-medium text-[#991B1B]">{error}</p>
           <Button
             className="mt-3"
@@ -394,7 +394,7 @@ function PaymentPanel({ deal, role, onDealUpdate }) {
         </Card>
       ) : null}
 
-      <Card className="rounded-2xl border-[#E4E9EE] p-5 shadow-sm sm:p-6">
+      <Card className="ui-card rounded-2xl border-[#E4E9EE] p-5 shadow-sm sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#98A2B3]">
@@ -427,13 +427,13 @@ function PaymentPanel({ deal, role, onDealUpdate }) {
       </Card>
 
       {canInitiate ? (
-        <Card className="rounded-2xl border-[#E4E9EE] p-5 shadow-sm sm:p-6">
+        <Card className="ui-card rounded-2xl border-[#E4E9EE] p-5 shadow-sm sm:p-6">
           <p className="text-sm font-semibold text-[#101828]">
             Initiate payment
           </p>
           <p className="mt-1 text-sm leading-6 text-[#667085]">
             This records your payment attempt. It does not mark the payment as
-            received; EPR Nexus confirms receipt separately.
+            received; EPR Nexuss confirms receipt separately.
           </p>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <label className="text-sm font-semibold text-[#344054]">
@@ -505,18 +505,18 @@ function PaymentPanel({ deal, role, onDealUpdate }) {
       ) : null}
 
       {status === "initiated" ? (
-        <Card className="rounded-2xl border-[#FED7AA] bg-[#FFFAF5] p-5 shadow-sm sm:p-6">
+        <Card className="ui-card rounded-2xl border-[#FED7AA] bg-[#FFFAF5] p-5 shadow-sm sm:p-6">
           <p className="text-sm font-semibold text-[#92400E]">
             Payment proof submitted — awaiting admin verification
           </p>
           <p className="mt-1 text-sm leading-6 text-[#7C5A2E]">
-            Your UTR and payment screenshot have been sent to EPR Nexus for verification.
+            Your UTR and payment screenshot have been sent to EPR Nexuss for verification.
           </p>
         </Card>
       ) : null}
 
       {invoice ? (
-        <Card className="rounded-2xl border-[#E4E9EE] p-5 shadow-sm sm:p-6">
+        <Card className="ui-card rounded-2xl border-[#E4E9EE] p-5 shadow-sm sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#98A2B3]">
@@ -575,7 +575,7 @@ function PaymentPanel({ deal, role, onDealUpdate }) {
               <strong>{money(invoice.subtotal)}</strong>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#667085]">EPR Nexus fee</span>
+              <span className="text-[#667085]">EPR Nexuss fee</span>
               <strong>{money(invoice.serviceFee)}</strong>
             </div>
             <div className="flex justify-between border-t border-[#E5EAF0] pt-3 text-base">
@@ -654,7 +654,7 @@ function ReviewPanel({ deal, role }) {
 
   return (
     <div className="space-y-4">
-      <Card className="rounded-2xl border-[#E4E9EE] p-5 shadow-sm sm:p-6">
+      <Card className="ui-card rounded-2xl border-[#E4E9EE] p-5 shadow-sm sm:p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#98A2B3]">Your review</p>
         {saved ? (
           <div className="mt-3 rounded-xl border border-[#CFE8D1] bg-[#F5FBF6] p-4">
@@ -678,7 +678,7 @@ function ReviewPanel({ deal, role }) {
         )}
       </Card>
 
-      <Card className="rounded-2xl border-[#E4E9EE] p-5 shadow-sm sm:p-6">
+      <Card className="ui-card rounded-2xl border-[#E4E9EE] p-5 shadow-sm sm:p-6">
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#98A2B3]">Deal reviews</p>
@@ -926,7 +926,7 @@ export function DealRoom({
                   <Progress status={currentDeal.status} />
 
                   <div className="grid gap-5 md:grid-cols-2">
-                    <Card className="rounded-2xl border-[#E4E9EE] bg-white p-5 shadow-sm sm:p-6">
+                    <Card className="ui-card rounded-2xl border-[#E4E9EE] bg-white p-5 shadow-sm sm:p-6">
                       <div className="mb-5 flex items-center justify-between">
                         <div>
                           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#98A2B3]">
@@ -954,7 +954,7 @@ export function DealRoom({
                           value={money(currentDeal.creditSubtotal)}
                         />
                         <Metric
-                          label="EPR Nexus fee"
+                          label="EPR Nexuss fee"
                           value={money(
                             currentDeal.serviceFee ??
                               currentDeal.commissionAmount,
@@ -972,7 +972,7 @@ export function DealRoom({
                       </div>
                     </Card>
 
-                    <Card className="rounded-2xl border-[#E4E9EE] bg-white p-5 shadow-sm sm:p-6">
+                    <Card className="ui-card rounded-2xl border-[#E4E9EE] bg-white p-5 shadow-sm sm:p-6">
                       <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#98A2B3]">
                         Credit
                       </p>
@@ -1010,12 +1010,12 @@ export function DealRoom({
                     </Card>
                   </div>
 
-                  <Card className="rounded-2xl border-[#CFE8D1] bg-[#F5FBF6] p-5 shadow-sm sm:p-6">
+                  <Card className="ui-card rounded-2xl border-[#CFE8D1] bg-[#F5FBF6] p-5 shadow-sm sm:p-6">
                     <p className="text-sm font-semibold text-[#1F6B2A]">
                       Transaction coordination
                     </p>
                     <p className="mt-1 text-sm leading-6 text-[#52705A]">
-                      EPR Nexus coordinates the transaction and keeps
+                      EPR Nexuss coordinates the transaction and keeps
                       participant contact information private. Use the Messages
                       tab for payment, document and delivery coordination.
                     </p>
@@ -1094,7 +1094,7 @@ export function DealRoom({
                           No quotation attached
                         </p>
                         <p className="mt-1 text-xs text-[#98A2B3]">
-                          EPR Nexus has not attached a quotation to this deal
+                          EPR Nexuss has not attached a quotation to this deal
                           request.
                         </p>
                       </div>

@@ -16,7 +16,6 @@ function SignupEmailPendingPage({ onNavigate }) {
   const [resending, setResending] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [developmentLink, setDevelopmentLink] = useState("");
   const [hasSentVerification, setHasSentVerification] = useState(false);
 
   useEffect(() => {
@@ -26,10 +25,9 @@ function SignupEmailPendingPage({ onNavigate }) {
       const parsed = JSON.parse(saved);
       setEmail(parsed.email || signupSession?.email || "");
       setNewEmail(parsed.email || signupSession?.email || "");
-      setDevelopmentLink(parsed.developmentVerificationUrl || "");
       setHasSentVerification(Boolean(parsed.emailVerificationSent));
     } catch {
-      // Ignore malformed development-only session data.
+      // Ignore malformed signup session data.
     }
   }, [signupSession]);
 
@@ -40,14 +38,12 @@ function SignupEmailPendingPage({ onNavigate }) {
       setSuccess("");
       const response = await resendSignupVerification();
       setSuccess(response.message || "A verification email has been sent.");
-      setDevelopmentLink(response.developmentVerificationUrl || "");
       setHasSentVerification(true);
       sessionStorage.setItem(
         "signupPendingNotice",
         JSON.stringify({
           email,
           emailVerificationSent: true,
-          developmentVerificationUrl: response.developmentVerificationUrl || "",
         }),
       );
     } catch (requestError) {
@@ -76,14 +72,12 @@ function SignupEmailPendingPage({ onNavigate }) {
       setNewEmail(response.email);
       setEditingEmail(false);
       setSuccess(response.message || "Email updated. You can now send a verification email.");
-      setDevelopmentLink(response.developmentVerificationUrl || "");
       setHasSentVerification(false);
       sessionStorage.setItem(
         "signupPendingNotice",
         JSON.stringify({
           email: response.email,
           emailVerificationSent: false,
-          developmentVerificationUrl: "",
         }),
       );
     } catch (requestError) {
@@ -98,7 +92,7 @@ function SignupEmailPendingPage({ onNavigate }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F9FB] flex items-center justify-center px-4 py-12">
+    <div className="pro-page min-h-screen bg-[#F7F9FB] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-lg">
         <div className="bg-white border border-[#E5EAF0] rounded-2xl shadow-sm p-7 text-center">
           <div className="w-16 h-16 rounded-full bg-[#EBF8EC] text-[#2E7D32] flex items-center justify-center mx-auto mb-5">
@@ -195,20 +189,6 @@ function SignupEmailPendingPage({ onNavigate }) {
                     ? "Resend Verification Email"
                     : "Send Verification Email"}
               </Button>
-            </div>
-          )}
-
-          {developmentLink && (
-            <div className="mt-5 rounded-lg bg-[#FFFBEB] border border-[#FCD34D] p-3 text-left">
-              <p className="text-xs font-semibold text-[#92400E]">
-                Development-only verification link
-              </p>
-              <a
-                href={developmentLink}
-                className="text-xs text-[#92400E] underline break-all mt-1 inline-block"
-              >
-                Open verification link
-              </a>
             </div>
           )}
 

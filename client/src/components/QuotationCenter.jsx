@@ -1,3 +1,4 @@
+import { toast } from "react-toastify";
 import { useEffect, useMemo, useState } from "react";
 import api from "../services/api.js";
 import { Badge, Button, Card, Input, Textarea } from "./ui";
@@ -41,7 +42,7 @@ function MessageList({ messages, role }) {
               No messages yet
             </p>
             <p className="text-xs text-[#9CA3AF] mt-1">
-              Messages are private between you and EPR Nexus.
+              Messages are private between you and EPR Nexuss.
             </p>
           </div>
         </div>
@@ -116,7 +117,7 @@ export function QuotationCard({
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-wide font-semibold text-[#6B7280]">
-            EPR Nexus Quotation #{offer.version}
+            EPR Nexuss Quotation #{offer.version}
           </p>
 
           <p className="text-lg font-bold text-[#0F1923] mt-1">
@@ -141,7 +142,7 @@ export function QuotationCard({
 
         <div className="flex justify-between">
           <span className="text-[#6B7280]">
-            EPR Nexus service fee
+            EPR Nexuss service fee
           </span>
           <b>{money(offer.serviceFee)}</b>
         </div>
@@ -360,7 +361,7 @@ export default function QuotationCenter({
 
   const saveOffer = async () => {
     if (!selectedId) {
-      alert("Please select a purchase request first.");
+      toast.error("Please select a purchase request first.");
       return;
     }
 
@@ -368,7 +369,7 @@ export default function QuotationCenter({
       offer.creditPricePerUnit === "" ||
       Number(offer.creditPricePerUnit) < 0
     ) {
-      alert("Enter a valid credit price.");
+      toast.error("Enter a valid credit price.");
       return;
     }
 
@@ -376,17 +377,17 @@ export default function QuotationCenter({
       offer.serviceFee === "" ||
       Number(offer.serviceFee) < 0
     ) {
-      alert("Enter a valid EPR Nexus service fee.");
+      toast.error("Enter a valid EPR Nexuss service fee.");
       return;
     }
 
     if (!selected) {
-      alert("The selected purchase request could not be found.");
+      toast.error("The selected purchase request could not be found.");
       return;
     }
 
     if (isLocked(selected.status) || selected.offer?.acceptedAt) {
-      alert(
+      toast.error(
         "This quotation is already accepted or the transaction is locked. A new quotation cannot be issued.",
       );
       return;
@@ -435,7 +436,7 @@ export default function QuotationCenter({
         note: "",
       }));
 
-      alert(
+      toast.success(
         response.data?.message ||
           "Quotation sent successfully.",
       );
@@ -445,7 +446,7 @@ export default function QuotationCenter({
         error,
       );
 
-      alert(
+      toast.error(
         error.response?.data?.message ||
           error.message ||
           "Failed to send the quotation.",
@@ -472,7 +473,7 @@ export default function QuotationCenter({
           </h2>
 
           <p className="text-xs text-[#9CA3AF] mt-1">
-            Create and revise EPR Nexus commercial offers.
+            Create and revise EPR Nexuss commercial offers.
             Messaging is handled separately.
           </p>
         </div>
@@ -945,7 +946,7 @@ export default function QuotationCenter({
                       />
 
                       <Input
-                        label="EPR Nexus Service Fee"
+                        label="EPR Nexuss Service Fee"
                         type="number"
                         min="0"
                         step="0.01"
@@ -1001,7 +1002,7 @@ export default function QuotationCenter({
 
                           <div className="flex justify-between">
                             <span className="text-[#6B7280]">
-                              EPR Nexus commission
+                              EPR Nexuss commission
                             </span>
 
                             <span className="font-semibold">

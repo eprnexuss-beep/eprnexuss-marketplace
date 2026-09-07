@@ -1,3 +1,4 @@
+import { toast } from "react-toastify";
 import { useEffect, useMemo, useState } from "react";
 import api from "../services/api.js";
 import { Badge, Button, Card, Input, Textarea } from "./ui";
@@ -36,7 +37,7 @@ function MessageList({ messages, role }) {
               No messages yet
             </p>
             <p className="text-xs text-[#9CA3AF] mt-1">
-              Messages are private between you and EPR Nexus.
+              Messages are private between you and EPR Nexuss.
             </p>
           </div>
         </div>
@@ -81,7 +82,7 @@ function QuotationCard({ request, onAccept, accepting }) {
           Quotation pending
         </p>
         <p className="text-xs text-[#9CA3AF] mt-1">
-          EPR Nexus will review your request and send the commercial quotation.
+          EPR Nexuss will review your request and send the commercial quotation.
         </p>
       </div>
     );
@@ -103,7 +104,7 @@ function QuotationCard({ request, onAccept, accepting }) {
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-wide font-semibold text-[#6B7280]">
-            EPR Nexus Quotation #{offer.version}
+            EPR Nexuss Quotation #{offer.version}
           </p>
           <p className="text-lg font-bold text-[#0F1923] mt-1">
             {money(offer.finalAmount)}
@@ -120,7 +121,7 @@ function QuotationCard({ request, onAccept, accepting }) {
           <b>{money(offer.creditSubtotal)}</b>
         </div>
         <div className="flex justify-between">
-          <span className="text-[#6B7280]">EPR Nexus service fee</span>
+          <span className="text-[#6B7280]">EPR Nexuss service fee</span>
           <b>{money(offer.serviceFee)}</b>
         </div>
         <div className="border-t border-[#DDEADF] pt-2 flex justify-between font-bold">
@@ -205,9 +206,9 @@ export function NegotiationChat({
         setMessage("");
       }
     } catch (error) {
-      alert(
+      toast.error(
         error.response?.data?.message ||
-          "Unable to send your message to EPR Nexus.",
+          "Unable to send your message to EPR Nexuss.",
       );
     } finally {
       setSending(false);
@@ -231,7 +232,7 @@ export function NegotiationChat({
         await load();
       }
     } catch (error) {
-      alert(
+      toast.error(
         error.response?.data?.message ||
           "Unable to accept this quotation.",
       );
@@ -246,7 +247,7 @@ export function NegotiationChat({
   return (
     <>
       <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-        {compact ? "Message EPR Nexus" : "Open Messages"}
+        {compact ? "Message EPR Nexuss" : "Open Messages"}
       </Button>
 
       {open && (
@@ -255,7 +256,7 @@ export function NegotiationChat({
             <div className="px-5 py-4 border-b border-[#E5EAF0] flex items-center justify-between shrink-0">
               <div>
                 <h3 className="font-semibold text-[#0F1923]">
-                  EPR Nexus Messages
+                  EPR Nexuss Messages
                 </h3>
                 <p className="text-xs text-[#9CA3AF] mt-1">
                   Your conversation is private. Buyer and seller contact
@@ -286,7 +287,7 @@ export function NegotiationChat({
                     <Textarea
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
-                      placeholder="Message EPR Nexus about price, quantity, documents or timing..."
+                      placeholder="Message EPR Nexuss about price, quantity, documents or timing..."
                       className="min-h-[72px]"
                     />
                     <Button
@@ -330,11 +331,11 @@ export function NegotiationChat({
                 ) : (
                   <div className="mt-4 rounded-xl border border-[#E5EAF0] p-4">
                     <p className="text-sm font-semibold text-[#374151]">
-                      EPR Nexus is handling the buyer quotation
+                      EPR Nexuss is handling the buyer quotation
                     </p>
                     <p className="text-xs text-[#6B7280] mt-1 leading-relaxed">
                       You can discuss your listing, quantity, availability and
-                      commercial expectations directly with EPR Nexus. Your
+                      commercial expectations directly with EPR Nexuss. Your
                       buyer's identity and the buyer-facing service fee remain
                       private.
                     </p>
@@ -470,7 +471,7 @@ export default function NegotiationCenter({ initialRequestId = "" }) {
         setMessage("");
       }
     } catch (error) {
-      alert(
+      toast.error(
         error.response?.data?.message ||
           "Failed to send the message.",
       );
@@ -486,7 +487,7 @@ export default function NegotiationCenter({ initialRequestId = "" }) {
       offer.creditPricePerUnit === "" ||
       offer.serviceFee === ""
     ) {
-      alert("Enter both the credit price and EPR Nexus service fee.");
+      toast.error("Enter both the credit price and EPR Nexuss service fee.");
       return;
     }
 
@@ -510,7 +511,7 @@ export default function NegotiationCenter({ initialRequestId = "" }) {
         setOffer((current) => ({ ...current, note: "" }));
       }
     } catch (error) {
-      alert(
+      toast.error(
         error.response?.data?.message ||
           "Failed to send the quotation.",
       );
@@ -530,7 +531,7 @@ export default function NegotiationCenter({ initialRequestId = "" }) {
             Credit Requests
           </h2>
           <p className="text-xs text-[#9CA3AF] mt-1">
-            Review requests and manage EPR Nexus quotations.
+            Review requests and manage EPR Nexuss quotations.
           </p>
         </div>
 
@@ -647,7 +648,7 @@ export default function NegotiationCenter({ initialRequestId = "" }) {
                       onChange={(e) => setMessage(e.target.value)}
                       placeholder={`Message ${
                         targetRole === "buyer" ? "buyer" : "seller"
-                      } through EPR Nexus...`}
+                      } through EPR Nexuss...`}
                       className="min-h-[72px]"
                     />
                     <Button
@@ -704,7 +705,7 @@ export default function NegotiationCenter({ initialRequestId = "" }) {
                 {!locked ? (
                   <div className="rounded-xl border border-[#CFE8D1] bg-[#F8FCF8] p-4">
                     <p className="text-sm font-semibold text-[#2E7D32]">
-                      EPR Nexus quotation
+                      EPR Nexuss quotation
                     </p>
                     <p className="text-xs text-[#52715A] mt-1">
                       Set the exact credit price and manual service fee. No
@@ -726,7 +727,7 @@ export default function NegotiationCenter({ initialRequestId = "" }) {
                       />
 
                       <Input
-                        label="EPR Nexus service fee"
+                        label="EPR Nexuss service fee"
                         type="number"
                         min="0"
                         value={offer.serviceFee}

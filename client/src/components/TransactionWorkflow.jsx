@@ -89,7 +89,7 @@ export function TransactionWorkflow({
   const isCancelled = state.type === "terminal";
 
   let title = "Next step";
-  let description = "Your request has been submitted. EPR Nexus will guide the transaction from here.";
+  let description = "Your request has been submitted. EPR Nexuss will guide the transaction from here.";
   let actionLabel = null;
 
   if (isCancelled) {
@@ -98,7 +98,7 @@ export function TransactionWorkflow({
   } else if (state.stage === "request") {
     title = "Next: Wait for your quotation";
     description =
-      "Your request is with EPR Nexus. We'll notify you when a quotation is ready.";
+      "Your request is with EPR Nexuss. We'll notify you when a quotation is ready.";
   } else if (state.stage === "quotation") {
     title = "Next: Accept the quotation";
     description =
@@ -109,7 +109,7 @@ export function TransactionWorkflow({
     description =
       role === "buyer"
         ? "Open the Deal Room to review the transaction and continue to Payment & Invoice."
-        : "Open the Deal Room to review the transaction and coordinate with EPR Nexus.";
+        : "Open the Deal Room to review the transaction and coordinate with EPR Nexuss.";
     actionLabel = "Open Deal Room →";
   } else if (state.stage === "payment") {
     title =
@@ -117,7 +117,7 @@ export function TransactionWorkflow({
     description =
       role === "buyer"
         ? "Open Payment & Invoice, choose your payment method, and enter your UTR or transaction reference."
-        : "Payment has moved to coordination. EPR Nexus will update you when confirmation is complete.";
+        : "Payment has moved to coordination. EPR Nexuss will update you when confirmation is complete.";
     actionLabel = role === "buyer" ? "Go to Payment →" : "Open Deal Room →";
   } else if (state.stage === "completed") {
     title = "Deal completed";

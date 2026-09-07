@@ -42,11 +42,11 @@ function ResetPasswordPage({ token, onNavigate }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F9FB] flex items-center justify-center px-4 py-12">
+    <div className="pro-page min-h-screen bg-[#F7F9FB] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <div className="mb-7 text-center">
           <h1 className="text-2xl font-bold text-[#0F1923]">Create a new password</h1>
-          <p className="mt-1 text-sm text-[#6B7280]">Choose a new password for your EPR Nexus account.</p>
+          <p className="mt-1 text-sm text-[#6B7280]">Choose a new password for your EPR Nexuss account.</p>
         </div>
 
         <div className="rounded-2xl border border-[#E5EAF0] bg-white p-6 shadow-sm">

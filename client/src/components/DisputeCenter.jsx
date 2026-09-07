@@ -65,7 +65,7 @@ function DisputeForm({ deal, onCreated, onCancel }) {
   };
 
   return (
-    <Card className="border-[#F6D5A5] bg-[#FFFCF5]">
+    <Card className="border-[#F6D5A5] bg-[#FFFCF5] p-5 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#98A2B3]">
@@ -75,7 +75,7 @@ function DisputeForm({ deal, onCreated, onCancel }) {
             Tell us what went wrong
           </h3>
           <p className="mt-1 text-xs leading-5 text-[#667085]">
-            EPR Nexus will review the transaction. Opening a dispute does not
+            EPR Nexuss will review the transaction. Opening a dispute does not
             automatically change payment, inventory or deal status.
           </p>
         </div>
@@ -196,7 +196,7 @@ function DisputeDetails({ dispute, role, onUpdated }) {
 
   return (
     <div className="space-y-4">
-      <Card>
+      <Card className="p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#98A2B3]">
@@ -242,14 +242,14 @@ function DisputeDetails({ dispute, role, onUpdated }) {
         ) : null}
       </Card>
 
-      <Card>
+      <Card className="p-5 sm:p-6">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#98A2B3]">
               Evidence & responses
             </p>
             <p className="mt-1 text-sm text-[#667085]">
-              Keep the case factual and inside EPR Nexus.
+              Keep the case factual and inside EPR Nexuss.
             </p>
           </div>
           <Badge label={`${dispute.evidence?.length || 0} entries`} />
@@ -387,7 +387,7 @@ export function DisputePanel({ deal, role }) {
 
   if (!dispute && !opening) {
     return (
-      <Card className="border-[#E5EAF0]">
+      <Card className="border-[#E5EAF0] p-5 sm:p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#98A2B3]">
           Transaction support
         </p>
@@ -515,7 +515,7 @@ export function DisputesPage({ role = "buyer" }) {
     );
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#98A2B3]">
@@ -525,7 +525,7 @@ export function DisputesPage({ role = "buyer" }) {
             Disputes & Resolution
           </h2>
           <p className="mt-1 text-sm text-[#667085]">
-            Track transaction issues and keep all responses inside EPR Nexus.
+            Track transaction issues and keep all responses inside EPR Nexuss.
           </p>
         </div>
         <Select
@@ -554,7 +554,7 @@ export function DisputesPage({ role = "buyer" }) {
           />
         </Card>
       ) : (
-        <div className="grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)]">
+        <div className="grid gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
           <Card className="h-fit p-2">
             <div className="space-y-1">
               {disputes.map((item) => (
@@ -599,7 +599,7 @@ export function DisputesPage({ role = "buyer" }) {
               />
               {role === "admin" &&
               !["resolved", "rejected"].includes(selected.status) ? (
-                <Card className="border-[#D9E1E8]">
+                <Card className="border-[#D9E1E8] p-5 sm:p-6">
                   <p className="text-sm font-semibold text-[#344054]">
                     Admin case action
                   </p>

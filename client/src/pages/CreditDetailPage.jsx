@@ -1,3 +1,4 @@
+import { toast } from "react-toastify";
 import { useEffect, useMemo, useState } from "react";
 
 import {
@@ -108,42 +109,42 @@ function RequestModal({ onClose, credit }) {
     if (submitting) return;
 
     if (!form.qty) {
-      alert("Please enter the required quantity.");
+      toast.error("Please enter the required quantity.");
       return;
     }
 
     if (Number(form.qty) <= 0) {
-      alert("Quantity must be greater than 0.");
+      toast.error("Quantity must be greater than 0.");
       return;
     }
 
     if (Number(form.qty) > Number(credit.quantity)) {
-      alert(`Only ${credit.quantity} MT is available for this listing.`);
+      toast.error(`Only ${credit.quantity} MT is available for this listing.`);
       return;
     }
 
     if (!form.contact.trim()) {
-      alert("Please enter the contact person.");
+      toast.error("Please enter the contact person.");
       return;
     }
 
     if (!form.company.trim()) {
-      alert("Please enter your company name.");
+      toast.error("Please enter your company name.");
       return;
     }
 
     if (!form.email.trim()) {
-      alert("Please enter your email.");
+      toast.error("Please enter your email.");
       return;
     }
 
     if (!form.gst.trim()) {
-      alert("Please enter your GST number.");
+      toast.error("Please enter your GST number.");
       return;
     }
 
     if (!form.phone.trim()) {
-      alert("Please enter your phone number.");
+      toast.error("Please enter your phone number.");
       return;
     }
 
@@ -166,7 +167,7 @@ function RequestModal({ onClose, credit }) {
       }
     } catch (error) {
       console.error("Purchase request error:", error);
-      alert(
+      toast.error(
         error.response?.data?.message || "Failed to submit purchase request.",
       );
     } finally {
@@ -190,7 +191,7 @@ function RequestModal({ onClose, credit }) {
             Your request is in review
           </h3>
           <p className="mt-3 text-sm leading-6 text-[#667085]">
-            EPR Nexus will verify your interest and contact you within 24–48
+            EPR Nexuss will verify your interest and contact you within 24–48
             hours. Seller contact details are never shared directly.
           </p>
           <Button onClick={onClose} className="mt-6 w-full">
@@ -213,7 +214,7 @@ function RequestModal({ onClose, credit }) {
               Request {credit.category} credits
             </h3>
             <p className="mt-1 text-sm text-[#667085]">
-              Tell EPR Nexus how much you need and how to reach you.
+              Tell EPR Nexuss how much you need and how to reach you.
             </p>
           </div>
           <button
@@ -258,7 +259,7 @@ function RequestModal({ onClose, credit }) {
           <div className="mt-5">
             <ConfidentialityBanner />
             <p className="mt-2 text-xs leading-5 text-[#667085]">
-              Your contact details are shared with EPR Nexus for transaction
+              Your contact details are shared with EPR Nexuss for transaction
               coordination, not directly with the seller.
             </p>
           </div>
@@ -439,7 +440,7 @@ function CreditDetailPage({ creditId, onNavigate }) {
         setSaved(true);
       }
     } catch (error) {
-      alert(
+      toast.error(
         error.response?.data?.message ||
           (saved
             ? "Failed to remove listing from watchlist."
@@ -452,7 +453,7 @@ function CreditDetailPage({ creditId, onNavigate }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F7F9FB] px-4 py-8 sm:px-6">
+      <div className="pro-page min-h-screen bg-[#F7F9FB] px-4 py-8 sm:px-6">
         <div className="mx-auto max-w-7xl animate-pulse">
           <div className="h-4 w-36 rounded bg-[#E5EAF0]" />
           <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -676,14 +677,14 @@ function CreditDetailPage({ creditId, onNavigate }) {
               <SectionHeader title="About this credit" />
               <p className="text-sm leading-7 text-[#667085]">
                 {credit.description ||
-                  "The seller has not provided a description for this listing. Contact EPR Nexus through the request flow for transaction-specific information."}
+                  "The seller has not provided a description for this listing. Contact EPR Nexuss through the request flow for transaction-specific information."}
               </p>
             </Card>
 
             <Card className="p-5 sm:p-7">
               <SectionHeader
                 title="Seller"
-                description="Seller information is shown according to EPR Nexus marketplace privacy controls."
+                description="Seller information is shown according to EPR Nexuss marketplace privacy controls."
               />
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
@@ -711,7 +712,7 @@ function CreditDetailPage({ creditId, onNavigate }) {
             <Card className="p-5 sm:p-7">
               <SectionHeader
                 title="Certificate & compliance"
-                description="The listing is subject to EPR Nexus verification before a transaction is completed."
+                description="The listing is subject to EPR Nexuss verification before a transaction is completed."
               />
               <div className="flex items-start gap-3 rounded-xl border border-[#E5EAF0] bg-[#F8FAFC] p-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-[#667085] shadow-sm">
@@ -728,8 +729,8 @@ function CreditDetailPage({ creditId, onNavigate }) {
                   </p>
                   <p className="mt-1 text-xs leading-5 text-[#667085]">
                     {document
-                      ? "Supporting documentation is associated with this listing and is reviewed through the EPR Nexus verification process."
-                      : "Certificate documentation is handled through the EPR Nexus verification process."}
+                      ? "Supporting documentation is associated with this listing and is reviewed through the EPR Nexuss verification process."
+                      : "Certificate documentation is handled through the EPR Nexuss verification process."}
                   </p>
                 </div>
                 <Badge label="Verified" />
@@ -832,7 +833,7 @@ function CreditDetailPage({ creditId, onNavigate }) {
                     <path d="M12 3l7 3v5c0 4.4-2.8 8.1-7 10-4.2-1.9-7-5.6-7-10V6l7-3z" />
                     <path d="M9 12l2 2 4-4" />
                   </Icon>
-                  EPR Nexus coordinates the transaction and keeps seller contact
+                  EPR Nexuss coordinates the transaction and keeps seller contact
                   details private.
                 </div>
               </div>

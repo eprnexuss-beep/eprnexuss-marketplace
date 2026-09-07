@@ -3,14 +3,14 @@ import React from 'react'
 const steps = [
   { n: '01', title: 'Seller lists credits', text: 'Verified sellers add available EPR credits with category, quantity, price, compliance year, validity and supporting documents.', icon: 'M12 3v18m9-9H3' },
   { n: '02', title: 'Buyer finds a match', text: 'Buyers browse verified listings or post a requirement when they need a specific credit type, quantity or location.', icon: 'M21 21l-4.35-4.35m2.1-5.4a7.5 7.5 0 11-15 0 7.5 7.5 0 0115 0z' },
-  { n: '03', title: 'We verify & coordinate', text: 'EPR Nexus reviews the parties, listing information and supporting documents before the transaction moves forward.', icon: 'M9 12l2 2 4-4m5.6-3.6A11.9 11.9 0 0112 2.9 11.9 11.9 0 013.4 6.4 12 12 0 003 9c0 5.6 3.8 10.3 9 11.6 5.2-1.3 9-6 9-11.6 0-1-.1-2-.4-2.9z' },
+  { n: '03', title: 'We verify & coordinate', text: 'EPR Nexuss reviews the parties, listing information and supporting documents before the transaction moves forward.', icon: 'M9 12l2 2 4-4m5.6-3.6A11.9 11.9 0 0112 2.9 11.9 11.9 0 013.4 6.4 12 12 0 003 9c0 5.6 3.8 10.3 9 11.6 5.2-1.3 9-6 9-11.6 0-1-.1-2-.4-2.9z' },
   { n: '04', title: 'We facilitate the deal', text: 'Negotiation, quotation, payment coordination and transaction communication stay inside the mediated Deal Room.', icon: 'M8 12h8m-4-4v8m9-4a9 9 0 11-18 0 9 9 0 0118 0z' },
   { n: '05', title: 'Deal completed', text: 'Once the transaction is completed, the platform records the lifecycle so both sides have a clear, traceable transaction history.', icon: 'M5 13l4 4L19 7' },
 ]
 
 const principles = [
-  ['Verified first', 'Listings and business documents pass through an EPR Nexus verification workflow before trusted marketplace activity.'],
-  ['Mediated by design', 'Buyer and seller contact details are not exposed directly. EPR Nexus remains the transaction layer.'],
+  ['Verified first', 'Listings and business documents pass through an EPR Nexuss verification workflow before trusted marketplace activity.'],
+  ['Mediated by design', 'Buyer and seller contact details are not exposed directly. EPR Nexuss remains the transaction layer.'],
   ['Traceable lifecycle', 'Requests, quotations, messages, payment coordination, disputes and completion stay connected to the deal.'],
 ]
 
@@ -38,7 +38,7 @@ export default function HowItWorksPage({ onNavigate }) {
         <div className="relative mx-auto grid max-w-7xl gap-14 px-4 pb-20 pt-14 sm:px-6 lg:grid-cols-[1.05fr_.95fr] lg:px-8 lg:pb-24 lg:pt-20">
           <div className="nexus-reveal max-w-2xl self-center">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#5AC361]/30 bg-[#5AC361]/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[.18em] text-[#A8E6AC]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#5AC361]" /> The EPR Nexus transaction model
+              <span className="h-1.5 w-1.5 rounded-full bg-[#5AC361]" /> The EPR Nexuss transaction model
             </div>
             <h1 className="text-4xl font-semibold tracking-[-.04em] sm:text-5xl lg:text-6xl">From verified credit<br /><span className="text-[#73D47A]">to completed deal.</span></h1>
             <p className="mt-6 max-w-xl text-base leading-7 text-white/60 sm:text-lg">A transparent, mediated journey for businesses buying and selling EPR credits — with verification, negotiation, payment coordination and a traceable Deal Room at every important step.</p>
@@ -89,9 +89,9 @@ export default function HowItWorksPage({ onNavigate }) {
 
       <section className="bg-[#101A22] py-20 text-white sm:py-24">
         <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-[.8fr_1.2fr] lg:px-8">
-          <div><p className="text-xs font-bold uppercase tracking-[.2em] text-[#73D47A]">Built for both sides</p><h2 className="mt-3 text-3xl font-semibold tracking-[-.03em] sm:text-4xl">Different goals.<br />Same trusted workflow.</h2><p className="mt-5 max-w-md text-sm leading-6 text-white/55">The marketplace keeps discovery simple while EPR Nexus handles the sensitive parts of the transaction.</p></div>
+          <div><p className="text-xs font-bold uppercase tracking-[.2em] text-[#73D47A]">Built for both sides</p><h2 className="mt-3 text-3xl font-semibold tracking-[-.03em] sm:text-4xl">Different goals.<br />Same trusted workflow.</h2><p className="mt-5 max-w-md text-sm leading-6 text-white/55">The marketplace keeps discovery simple while EPR Nexuss handles the sensitive parts of the transaction.</p></div>
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-3xl border border-white/10 bg-white/[.04] p-6"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#5AC361]/15 text-[#73D47A]"><Icon d="M12 3v18m9-9H3" /></div><h3 className="mt-5 font-bold">For sellers</h3><ul className="mt-3 space-y-2.5 text-sm leading-5 text-white/55"><li>• Reach verified business demand</li><li>• Showcase certified credit availability</li><li>• Let EPR Nexus coordinate the deal</li></ul></div>
+            <div className="rounded-3xl border border-white/10 bg-white/[.04] p-6"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#5AC361]/15 text-[#73D47A]"><Icon d="M12 3v18m9-9H3" /></div><h3 className="mt-5 font-bold">For sellers</h3><ul className="mt-3 space-y-2.5 text-sm leading-5 text-white/55"><li>• Reach verified business demand</li><li>• Showcase certified credit availability</li><li>• Let EPR Nexuss coordinate the deal</li></ul></div>
             <div className="rounded-3xl border border-white/10 bg-white/[.04] p-6"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#5AC361]/15 text-[#73D47A]"><Icon d="M21 21l-4.35-4.35m2.1-5.4a7.5 7.5 0 11-15 0 7.5 7.5 0 0115 0z" /></div><h3 className="mt-5 font-bold">For buyers</h3><ul className="mt-3 space-y-2.5 text-sm leading-5 text-white/55"><li>• Discover verified credit listings</li><li>• Request the quantity you need</li><li>• Keep negotiation and payment coordinated</li></ul></div>
           </div>
         </div>

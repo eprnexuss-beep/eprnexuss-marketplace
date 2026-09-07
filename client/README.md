@@ -1,7 +1,7 @@
-# EPR Nexus — EPR Credit Marketplace (Frontend)
+# EPR Nexuss — EPR Credit Marketplace (Frontend)
 
 A B2B marketplace UI where verified sellers list EPR credits, buyers post requirements, and
-EPR Nexus mediates every deal — no direct buyer/seller contact, ever.
+EPR Nexuss mediates every deal — no direct buyer/seller contact, ever.
 
 This is a **plain JavaScript / JSX** React app (no TypeScript), built with Vite + Tailwind CSS v4.
 It was converted from an original TypeScript/TSX prototype, with all type annotations stripped and

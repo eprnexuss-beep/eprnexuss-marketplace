@@ -9,7 +9,6 @@ function ForgotPasswordPage({ onNavigate }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const [developmentResetUrl, setDevelopmentResetUrl] = useState("");
 
   const handleSubmit = async () => {
     const normalizedEmail = email.trim();
@@ -23,7 +22,6 @@ function ForgotPasswordPage({ onNavigate }) {
       setLoading(true);
       setError("");
       const response = await forgotPassword(normalizedEmail);
-      setDevelopmentResetUrl(response.developmentResetUrl || "");
       setSubmitted(true);
     } catch (requestError) {
       setError(
@@ -36,7 +34,7 @@ function ForgotPasswordPage({ onNavigate }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F9FB] flex items-center justify-center px-4 py-12">
+    <div className="pro-page min-h-screen bg-[#F7F9FB] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <div className="mb-7 text-center">
           <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-[#5AC361] text-white shadow-sm">
@@ -46,7 +44,7 @@ function ForgotPasswordPage({ onNavigate }) {
           </div>
           <h1 className="text-2xl font-bold text-[#0F1923]">Reset your password</h1>
           <p className="mt-1 text-sm text-[#6B7280]">
-            Enter the email associated with your EPR Nexus account.
+            Enter the email associated with your EPR Nexuss account.
           </p>
         </div>
 
@@ -86,19 +84,11 @@ function ForgotPasswordPage({ onNavigate }) {
                 If an account with that email exists, we&apos;ve sent a password reset link. The link expires in 1 hour.
               </p>
 
-              {developmentResetUrl && (
-                <div className="mt-4 rounded-lg border border-[#FCD34D] bg-[#FFFBEB] p-3 text-left text-xs text-[#92400E]">
-                  <p className="font-semibold">Development mode</p>
-                  <p className="mt-1 break-all">Reset link: {developmentResetUrl}</p>
-                </div>
-              )}
-
               <button
                 type="button"
                 className="mt-5 text-sm font-medium text-[#2E7D32] hover:underline"
                 onClick={() => {
                   setSubmitted(false);
-                  setDevelopmentResetUrl("");
                 }}
               >
                 Try another email

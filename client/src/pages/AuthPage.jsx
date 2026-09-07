@@ -132,7 +132,6 @@ function AuthPage({ onNavigate, initialMode = "login" }) {
             name: responseData.name,
             role: responseData.role,
             emailVerificationSent: false,
-            developmentVerificationUrl: "",
           }),
         );
 
@@ -194,7 +193,6 @@ function AuthPage({ onNavigate, initialMode = "login" }) {
           name: response.name,
           role: response.role,
           emailVerificationSent: response.emailVerificationSent,
-          developmentVerificationUrl: response.developmentVerificationUrl || "",
         }),
       );
 
@@ -255,7 +253,7 @@ function AuthPage({ onNavigate, initialMode = "login" }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F9FB] flex items-center justify-center px-4 py-12">
+    <div className="pro-page min-h-screen bg-[#F7F9FB] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <div className="text-center mb-7">
           <div className="inline-flex items-center gap-2 mb-4">
@@ -276,23 +274,21 @@ function AuthPage({ onNavigate, initialMode = "login" }) {
             </div>
             <span
               className="text-xl font-bold text-[#0F1923]"
-              style={{ fontFamily: "Outfit, sans-serif" }}
             >
-              EPR Nexus
+              EPR Nexuss
             </span>
           </div>
 
           <h1
             className="text-2xl font-bold text-[#0F1923]"
-            style={{ fontFamily: "Outfit, sans-serif" }}
           >
             {mode === "login"
               ? "Sign In to Your Account"
-              : "Create Your EPR Nexus Account"}
+              : "Create Your EPR Nexuss Account"}
           </h1>
           <p className="text-sm text-[#6B7280] mt-1">
             {mode === "login"
-              ? "Access your EPR Nexus dashboard"
+              ? "Access your EPR Nexuss dashboard"
               : "Create your account first. Email verification is required before login."}
           </p>
         </div>
@@ -438,7 +434,7 @@ function AuthPage({ onNavigate, initialMode = "login" }) {
               {mode === "signup" && (
                 <p className="text-xs text-[#6B7280] text-center mb-3">
                   Already have a Google account? Use Google to sign in. If it is
-                  new, EPR Nexus will guide you through signup and ask for your
+                  new, EPR Nexuss will guide you through signup and ask for your
                   phone number on the next screen.
                 </p>
               )}
@@ -478,7 +474,7 @@ function AuthPage({ onNavigate, initialMode = "login" }) {
         </div>
 
         <p className="text-xs text-[#9CA3AF] text-center mt-4 leading-relaxed">
-          By continuing, you agree to the EPR Nexus Terms of Service and Privacy
+          By continuing, you agree to the EPR Nexuss Terms of Service and Privacy
           Policy.
         </p>
       </div>
@@ -505,7 +501,7 @@ function AuthPage({ onNavigate, initialMode = "login" }) {
               New Google account
             </h2>
             <p className="text-sm text-[#6B7280] mt-2 leading-relaxed">
-              This Google account is not registered with EPR Nexus yet. Please
+              This Google account is not registered with EPR Nexuss yet. Please
               sign up to create your account. Your Google name and email will be
               used automatically.
             </p>
