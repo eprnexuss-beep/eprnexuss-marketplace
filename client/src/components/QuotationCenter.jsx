@@ -53,9 +53,7 @@ function MessageList({ messages, role }) {
           return (
             <div
               key={item._id}
-              className={`flex ${
-                mine ? "justify-end" : "justify-start"
-              }`}
+              className={`flex ${mine ? "justify-end" : "justify-start"}`}
             >
               <div
                 className={`max-w-[82%] rounded-2xl px-4 py-3 ${
@@ -103,8 +101,7 @@ export function QuotationCard({
   const accepted = Boolean(offer.acceptedAt);
 
   const expired =
-    offer.expiresAt &&
-    new Date(offer.expiresAt).getTime() < Date.now();
+    offer.expiresAt && new Date(offer.expiresAt).getTime() < Date.now();
 
   return (
     <div
@@ -126,25 +123,26 @@ export function QuotationCard({
         </div>
 
         <span className="text-xs font-semibold text-[#2E7D32]">
-          {accepted
-            ? "Accepted"
-            : expired
-              ? "Expired"
-              : "Awaiting response"}
+          {accepted ? "Accepted" : expired ? "Expired" : "Awaiting response"}
         </span>
       </div>
 
       <div className="mt-4 space-y-2 text-sm">
         <div className="flex justify-between">
-          <span className="text-[#6B7280]">Credit value</span>
-          <b>{money(offer.creditSubtotal)}</b>
+          <span className="text-[#6B7280]">Price / MT</span>
+          <b>{money(offer.buyerPricePerUnit ?? offer.creditPricePerUnit)}</b>
         </div>
 
         <div className="flex justify-between">
-          <span className="text-[#6B7280]">
-            EPR Nexuss service fee
-          </span>
-          <b>{money(offer.serviceFee)}</b>
+          <span className="text-[#6B7280]">Credit quantity</span>
+          <b>
+            {Number(
+              request?.quantity ??
+                request?.requestedQuantity ??
+                0,
+            ).toLocaleString("en-IN")}{" "}
+            MT
+          </b>
         </div>
 
         <div className="border-t border-[#DDEADF] pt-2 flex justify-between font-bold">
@@ -160,19 +158,15 @@ export function QuotationCard({
       ) : null}
 
       {showActions && !accepted && !expired ? (
-        <Button
-          className="w-full mt-4"
-          onClick={onAccept}
-          disabled={accepting}
-        >
+        <Button className="w-full mt-4" onClick={onAccept} disabled={accepting}>
           {accepting ? "Confirming..." : "Accept Quotation"}
         </Button>
       ) : null}
 
       {accepted ? (
         <p className="mt-4 text-xs text-[#2E7D32]">
-          Commercial terms are locked. Payment is still pending until EPR
-          Nexus confirms receipt.
+          Commercial terms are locked. Payment is still pending until EPR Nexus
+          confirms receipt.
         </p>
       ) : null}
     </div>
@@ -206,9 +200,7 @@ export default function QuotationCenter({
    * useState(initialRequestId) only uses the value on the first render.
    * Therefore we explicitly synchronize it below.
    */
-  const [selectedId, setSelectedId] = useState(
-    initialRequestId || "",
-  );
+  const [selectedId, setSelectedId] = useState(initialRequestId || "");
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -216,8 +208,10 @@ export default function QuotationCenter({
   const [savingOffer, setSavingOffer] = useState(false);
 
   const [offer, setOffer] = useState({
-    creditPricePerUnit: "",
-    serviceFee: "",
+    sellerPricePerUnit: "",
+    marginType: "percentage",
+    marginValue: "10",
+    marginRate: "10",
     note: "",
     expiresAt: "",
   });
@@ -241,12 +235,11 @@ export default function QuotationCenter({
       setLoading(true);
       setLoadError("");
 
-     const response = await api.get("/requests/admin");
+      const response = await api.get("/requests/admin");
 
       if (!response.data?.success) {
         throw new Error(
-          response.data?.message ||
-            "Unable to load quotation requests.",
+          response.data?.message || "Unable to load quotation requests.",
         );
       }
 
@@ -266,10 +259,7 @@ export default function QuotationCenter({
 
       const requestedId = initialRequestId || selectedId;
 
-      if (
-        requestedId &&
-        incoming.some((item) => item._id === requestedId)
-      ) {
+      if (requestedId && incoming.some((item) => item._id === requestedId)) {
         setSelectedId(requestedId);
       } else if (
         !selectedId ||
@@ -300,10 +290,7 @@ export default function QuotationCenter({
   /* ------------------------------------------------------------------------ */
 
   const selected = useMemo(
-    () =>
-      requests.find(
-        (item) => item._id === selectedId,
-      ) || null,
+    () => requests.find((item) => item._id === selectedId) || null,
     [requests, selectedId],
   );
 
@@ -313,47 +300,82 @@ export default function QuotationCenter({
 
   useEffect(() => {
     const current = selected?.offer;
+    const listing = selected?.listingId;
+
+    const sellerPrice =
+      current?.sellerPricePerUnit ??
+      listing?.price ??
+      current?.creditPricePerUnit ??
+      "";
+
+    let marginType = current?.marginType;
+    let marginValue = current?.marginValue;
+
+    if (!marginType) {
+      if (current?.sellerPricePerUnit != null && current?.marginRate != null) {
+        marginType = "percentage";
+        marginValue = current.marginRate;
+      } else if (listing?.publicMarginType) {
+        marginType =
+          listing.publicMarginType === "value" ? "value" : "percentage";
+        marginValue =
+          listing.publicMarginValue ??
+          listing.publicMarkupRate ??
+          (marginType === "value" ? 0 : 10);
+      } else {
+        marginType = "percentage";
+        marginValue = 10;
+      }
+    }
 
     setOffer({
-      creditPricePerUnit:
-        current?.creditPricePerUnit ?? "",
-
-      serviceFee:
-        current?.serviceFee ?? "",
-
+      sellerPricePerUnit: sellerPrice,
+      marginType,
+      marginValue: Number.isFinite(Number(marginValue))
+        ? String(Number(marginValue))
+        : "10",
+      marginRate:
+        marginType === "percentage"
+          ? String(Number(marginValue) || 0)
+          : sellerPrice && Number(sellerPrice) > 0
+            ? String(
+                Math.round(
+                  (Number(marginValue || 0) / Number(sellerPrice)) * 10000,
+                ) / 100,
+              )
+            : "0",
       note: "",
-
       expiresAt: current?.expiresAt
-        ? new Date(current.expiresAt)
-            .toISOString()
-            .slice(0, 16)
+        ? new Date(current.expiresAt).toISOString().slice(0, 16)
         : "",
     });
   }, [
     selectedId,
     selected?.offer?.version,
     selected?.offer?.acceptedAt,
+    selected?.listingId?.publicMarginType,
+    selected?.listingId?.publicMarginValue,
   ]);
 
   /* ------------------------------------------------------------------------ */
   /* Calculations                                                             */
   /* ------------------------------------------------------------------------ */
 
-  const creditPrice = Number(
-    offer.creditPricePerUnit || 0,
-  );
+  const sellerPrice = Number(offer.sellerPricePerUnit || 0);
+  const quantity = Number(selected?.quantity || 0);
+  const marginType = offer.marginType === "value" ? "value" : "percentage";
+  const marginValue = Number(offer.marginValue || 0);
 
-  const quantity = Number(
-    selected?.quantity || 0,
-  );
-
-  const serviceFee = Number(
-    offer.serviceFee || 0,
-  );
-
-  const creditSubtotal = creditPrice * quantity;
-
-  const total = creditSubtotal + serviceFee;
+  const sellerSubtotal = sellerPrice * quantity;
+  const marginAmount =
+    marginType === "value"
+      ? marginValue * quantity
+      : sellerSubtotal * (marginValue / 100);
+  const buyerPrice =
+    marginType === "value"
+      ? sellerPrice + marginValue
+      : sellerPrice * (1 + marginValue / 100);
+  const buyerTotal = buyerPrice * quantity;
 
   /* ------------------------------------------------------------------------ */
   /* Send / revise quotation                                                  */
@@ -366,18 +388,23 @@ export default function QuotationCenter({
     }
 
     if (
-      offer.creditPricePerUnit === "" ||
-      Number(offer.creditPricePerUnit) < 0
+      offer.sellerPricePerUnit === "" ||
+      Number(offer.sellerPricePerUnit) <= 0
     ) {
-      toast.error("Enter a valid credit price.");
+      toast.error("Enter the seller's agreed credit price.");
       return;
     }
 
     if (
-      offer.serviceFee === "" ||
-      Number(offer.serviceFee) < 0
+      offer.marginValue === "" ||
+      Number(offer.marginValue) < 0 ||
+      (marginType === "percentage" && Number(offer.marginValue) > 100)
     ) {
-      toast.error("Enter a valid EPR Nexuss service fee.");
+      toast.error(
+        marginType === "percentage"
+          ? "Enter a platform margin between 0% and 100%."
+          : "Enter a non-negative margin amount per MT.",
+      );
       return;
     }
 
@@ -396,28 +423,24 @@ export default function QuotationCenter({
     try {
       setSavingOffer(true);
 
-      const response = await api.post(
-        `/requests/admin/${selectedId}/offer`,
-        {
-          creditPricePerUnit: Number(
-            offer.creditPricePerUnit,
-          ),
+      const response = await api.post(`/requests/admin/${selectedId}/offer`, {
+        sellerPricePerUnit: Number(offer.sellerPricePerUnit),
+        marginType,
+        marginValue: Number(offer.marginValue),
+        marginRate:
+          marginType === "percentage"
+            ? Number(offer.marginValue)
+            : sellerPrice > 0
+              ? (Number(offer.marginValue) / sellerPrice) * 100
+              : 0,
+        note: offer.note?.trim() || "",
 
-          serviceFee: Number(
-            offer.serviceFee,
-          ),
-
-          note: offer.note?.trim() || "",
-
-          expiresAt:
-            offer.expiresAt || null,
-        },
-      );
+        expiresAt: offer.expiresAt || null,
+      });
 
       if (!response.data?.success) {
         throw new Error(
-          response.data?.message ||
-            "Failed to send the quotation.",
+          response.data?.message || "Failed to send the quotation.",
         );
       }
 
@@ -431,20 +454,11 @@ export default function QuotationCenter({
        */
       await loadRequests();
 
-      setOffer((current) => ({
-        ...current,
-        note: "",
-      }));
+      setOffer((current) => ({ ...current, note: "" }));
 
-      toast.success(
-        response.data?.message ||
-          "Quotation sent successfully.",
-      );
+      toast.success(response.data?.message || "Quotation sent successfully.");
     } catch (error) {
-      console.error(
-        "Quotation save failed:",
-        error,
-      );
+      console.error("Quotation save failed:", error);
 
       toast.error(
         error.response?.data?.message ||
@@ -468,13 +482,11 @@ export default function QuotationCenter({
 
       <Card className="overflow-hidden flex flex-col min-h-0">
         <div className="px-4 py-4 border-b border-[#E5EAF0]">
-          <h2 className="font-semibold text-[#0F1923]">
-            Quotations
-          </h2>
+          <h2 className="font-semibold text-[#0F1923]">Quotations</h2>
 
           <p className="text-xs text-[#9CA3AF] mt-1">
-            Create and revise EPR Nexuss commercial offers.
-            Messaging is handled separately.
+            Create and revise EPR Nexuss commercial offers. Messaging is handled
+            separately.
           </p>
         </div>
 
@@ -490,15 +502,9 @@ export default function QuotationCenter({
                   Unable to load quotations
                 </p>
 
-                <p className="text-xs text-[#7A271A] mt-1">
-                  {loadError}
-                </p>
+                <p className="text-xs text-[#7A271A] mt-1">{loadError}</p>
 
-                <Button
-                  type="button"
-                  className="mt-3"
-                  onClick={loadRequests}
-                >
+                <Button type="button" className="mt-3" onClick={loadRequests}>
                   Retry
                 </Button>
               </div>
@@ -511,8 +517,7 @@ export default function QuotationCenter({
                 </p>
 
                 <p className="text-xs text-[#9CA3AF] mt-1">
-                  Approved purchase requests will appear here
-                  for quotation.
+                  Approved purchase requests will appear here for quotation.
                 </p>
               </div>
             </div>
@@ -520,33 +525,26 @@ export default function QuotationCenter({
             requests.map((request) => {
               const requestOffer = request.offer;
 
-              const hasQuotation =
-                requestOffer?.finalAmount != null;
+              const hasQuotation = requestOffer?.finalAmount != null;
 
               const accepted =
                 Boolean(requestOffer?.acceptedAt) ||
                 request.status === "offer_accepted";
 
-              const active =
-                selectedId === request._id;
+              const active = selectedId === request._id;
 
               return (
                 <button
                   type="button"
                   key={request._id}
-                  onClick={() =>
-                    setSelectedId(request._id)
-                  }
+                  onClick={() => setSelectedId(request._id)}
                   className={`w-full text-left p-4 border-b border-[#F0F4F8] transition ${
-                    active
-                      ? "bg-[#F0FBF1]"
-                      : "hover:bg-[#F8FAFC]"
+                    active ? "bg-[#F0FBF1]" : "hover:bg-[#F8FAFC]"
                   }`}
                 >
                   <div className="flex justify-between gap-2">
                     <p className="font-semibold text-sm text-[#0F1923]">
-                      {request.listingId?.category ||
-                        "EPR Credit"}
+                      {request.listingId?.category || "EPR Credit"}
                     </p>
 
                     <Badge
@@ -569,9 +567,7 @@ export default function QuotationCenter({
 
                   <p className="text-[11px] text-[#9CA3AF] mt-2">
                     {hasQuotation
-                      ? money(
-                          requestOffer.finalAmount,
-                        )
+                      ? money(requestOffer.finalAmount)
                       : "Quotation not issued"}
                   </p>
 
@@ -598,8 +594,8 @@ export default function QuotationCenter({
               </p>
 
               <p className="text-xs text-[#9CA3AF] mt-2">
-                You can also open a specific request using
-                “Manage Request” from Purchase Requests.
+                You can also open a specific request using “Manage Request” from
+                Purchase Requests.
               </p>
             </div>
           </div>
@@ -613,23 +609,16 @@ export default function QuotationCenter({
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="font-semibold text-[#0F1923]">
-                    {selected.listingId?.category ||
-                      "Credit"}{" "}
-                    · {selected.quantity} MT
+                    {selected.listingId?.category || "Credit"} ·{" "}
+                    {selected.quantity} MT
                   </h2>
 
-                  <Badge
-                    label={statusLabel(
-                      selected.status,
-                    )}
-                  />
+                  <Badge label={statusLabel(selected.status)} />
                 </div>
 
                 <p className="text-xs text-[#6B7280] mt-1">
                   Buyer:{" "}
-                  {selected.buyerId?.company ||
-                    selected.buyerId?.name ||
-                    "—"}
+                  {selected.buyerId?.company || selected.buyerId?.name || "—"}
                 </p>
 
                 <p className="text-xs text-[#9CA3AF] mt-1">
@@ -656,9 +645,7 @@ export default function QuotationCenter({
 
             <div className="grid sm:grid-cols-3 gap-3 mt-5">
               <div className="rounded-lg border border-[#E5EAF0] bg-[#F8FAFC] p-3">
-                <p className="text-[11px] text-[#9CA3AF]">
-                  Requested quantity
-                </p>
+                <p className="text-[11px] text-[#9CA3AF]">Requested quantity</p>
 
                 <p className="text-sm font-semibold text-[#0F1923] mt-1">
                   {selected.quantity} MT
@@ -666,32 +653,20 @@ export default function QuotationCenter({
               </div>
 
               <div className="rounded-lg border border-[#E5EAF0] bg-[#F8FAFC] p-3">
-                <p className="text-[11px] text-[#9CA3AF]">
-                  Listed price
-                </p>
+                <p className="text-[11px] text-[#9CA3AF]">Listed price</p>
 
                 <p className="text-sm font-semibold text-[#0F1923] mt-1">
-                  {money(
-                    selected.listingId?.price,
-                  )}{" "}
-                  / MT
+                  {money(selected.listingId?.price)} / MT
                 </p>
               </div>
 
               <div className="rounded-lg border border-[#E5EAF0] bg-[#F8FAFC] p-3">
-                <p className="text-[11px] text-[#9CA3AF]">
-                  Request value
-                </p>
+                <p className="text-[11px] text-[#9CA3AF]">Request value</p>
 
                 <p className="text-sm font-semibold text-[#0F1923] mt-1">
                   {money(
-                    Number(
-                      selected.quantity || 0,
-                    ) *
-                      Number(
-                        selected.listingId?.price ||
-                          0,
-                      ),
+                    Number(selected.quantity || 0) *
+                      Number(selected.listingId?.price || 0),
                   )}
                 </p>
               </div>
@@ -717,77 +692,74 @@ export default function QuotationCenter({
                   {selected.offerHistory?.length ? (
                     <span className="text-xs text-[#6B7280]">
                       {selected.offerHistory.length} version
-                      {selected.offerHistory.length === 1
-                        ? ""
-                        : "s"}
+                      {selected.offerHistory.length === 1 ? "" : "s"}
                     </span>
                   ) : null}
                 </div>
 
                 {selected.offerHistory?.length ? (
                   <div className="mt-4 space-y-3">
-                    {selected.offerHistory.map(
-                      (item) => (
-                        <div
-                          key={item.version}
-                          className="rounded-lg border border-[#E5EAF0] bg-white p-3"
-                        >
-                          <div className="flex justify-between gap-3">
-                            <span className="text-xs font-semibold text-[#0F1923]">
-                              Quotation #{item.version}
-                            </span>
+                    {selected.offerHistory.map((item) => (
+                      <div
+                        key={item.version}
+                        className="rounded-lg border border-[#E5EAF0] bg-white p-3"
+                      >
+                        <div className="flex justify-between gap-3">
+                          <span className="text-xs font-semibold text-[#0F1923]">
+                            Quotation #{item.version}
+                          </span>
 
-                            <span className="text-xs font-semibold text-[#0F1923]">
-                              {money(
-                                item.finalAmount,
-                              )}
-                            </span>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-xs">
-                            <span className="text-[#6B7280]">
-                              Credit value
-                            </span>
-
-                            <span className="text-right">
-                              {money(
-                                item.creditSubtotal,
-                              )}
-                            </span>
-
-                            <span className="text-[#6B7280]">
-                              Service fee
-                            </span>
-
-                            <span className="text-right">
-                              {money(
-                                item.serviceFee,
-                              )}
-                            </span>
-                          </div>
-
-                          <p className="text-[11px] text-[#9CA3AF] mt-2">
-                            {item.sentAt
-                              ? new Date(
-                                  item.sentAt,
-                                ).toLocaleString(
-                                  "en-IN",
-                                )
-                              : "—"}
-
-                            {item.acceptedAt
-                              ? " · Accepted"
-                              : ""}
-                          </p>
-
-                          {item.note ? (
-                            <p className="text-[11px] text-[#6B7280] mt-2">
-                              {item.note}
-                            </p>
-                          ) : null}
+                          <span className="text-xs font-semibold text-[#0F1923]">
+                            {money(item.finalAmount)}
+                          </span>
                         </div>
-                      ),
-                    )}
+
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-xs">
+                          <span className="text-[#6B7280]">Credit value</span>
+
+                          <span className="text-right">
+                            {money(item.creditSubtotal)}
+                          </span>
+
+                          <span className="text-[#6B7280]">
+                            Seller price / MT
+                          </span>
+
+                          <span className="text-right">
+                            {money(
+                              item.sellerPricePerUnit ??
+                                item.creditPricePerUnit,
+                            )}
+                          </span>
+
+                          <span className="text-[#6B7280]">
+                            Platform margin
+                          </span>
+
+                          <span className="text-right">
+                            {item.marginType === "value"
+                              ? `${money(item.marginValue)} / MT`
+                              : `${Number(
+                                  item.marginValue ?? item.marginRate ?? 0,
+                                ).toLocaleString("en-IN")}%`}
+                          </span>
+                        </div>
+
+                        <p className="text-[11px] text-[#9CA3AF] mt-2">
+                          {item.sentAt
+                            ? new Date(item.sentAt).toLocaleString("en-IN")
+                            : "—"}
+
+                          {item.acceptedAt ? " · Accepted" : ""}
+                        </p>
+
+                        {item.note ? (
+                          <p className="text-[11px] text-[#6B7280] mt-2">
+                            {item.note}
+                          </p>
+                        ) : null}
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <p className="text-sm text-[#9CA3AF] mt-3">
@@ -798,10 +770,7 @@ export default function QuotationCenter({
                 {/* Current quotation */}
                 {selected.offer?.finalAmount != null ? (
                   <div className="mt-4">
-                    <QuotationCard
-                      request={selected}
-                      showActions={false}
-                    />
+                    <QuotationCard request={selected} showActions={false} />
                   </div>
                 ) : null}
               </div>
@@ -823,8 +792,8 @@ export default function QuotationCenter({
                     </div>
 
                     <p className="text-sm text-[#6B7280] mt-2">
-                      Commercial terms are locked. Do not issue
-                      another quotation for this request.
+                      Commercial terms are locked. Do not issue another
+                      quotation for this request.
                     </p>
 
                     <div className="mt-4 rounded-lg bg-[#F0FBF1] border border-[#CFE8D1] p-3">
@@ -834,7 +803,9 @@ export default function QuotationCenter({
                         ).toLowerCase();
                         const paymentStatus = String(
                           selected.deal?.paymentStatus ||
-                            (dealStatus === "completed" ? "received" : "pending"),
+                            (dealStatus === "completed"
+                              ? "received"
+                              : "pending"),
                         ).toLowerCase();
                         const completed = dealStatus === "completed";
                         const received =
@@ -867,7 +838,11 @@ export default function QuotationCenter({
                             Deal status
                           </p>
                           <p className="text-xs font-semibold text-[#374151] mt-1">
-                            {String(selected.deal?.status || selected.status || "payment_coordination") === "completed"
+                            {String(
+                              selected.deal?.status ||
+                                selected.status ||
+                                "payment_coordination",
+                            ) === "completed"
                               ? "Completed"
                               : "Payment Coordination"}
                           </p>
@@ -878,8 +853,12 @@ export default function QuotationCenter({
                             Payment
                           </p>
                           <p className="text-xs font-semibold text-[#374151] mt-1">
-                            {String(selected.deal?.status || selected.status || "").toLowerCase() === "completed" ||
-                            String(selected.deal?.paymentStatus || "").toLowerCase() === "received"
+                            {String(
+                              selected.deal?.status || selected.status || "",
+                            ).toLowerCase() === "completed" ||
+                            String(
+                              selected.deal?.paymentStatus || "",
+                            ).toLowerCase() === "received"
                               ? "Received"
                               : "Pending"}
                           </p>
@@ -905,10 +884,7 @@ export default function QuotationCenter({
                       </div>
 
                       {typeof onOpenDeals === "function" ? (
-                        <Button
-                          className="w-full mt-4"
-                          onClick={onOpenDeals}
-                        >
+                        <Button className="w-full mt-4" onClick={onOpenDeals}>
                           Open Deal & Continue Transaction
                         </Button>
                       ) : null}
@@ -923,42 +899,64 @@ export default function QuotationCenter({
                     </h3>
 
                     <p className="text-xs text-[#9CA3AF] mt-1">
-                      The buyer will see these commercial terms
-                      and can accept the quotation.
+                      The buyer will see these commercial terms and can accept
+                      the quotation.
                     </p>
 
                     <div className="mt-4 space-y-3">
                       <Input
-                        label="Credit Price / MT"
+                        label="Seller agreed price / MT"
                         type="number"
-                        min="0"
+                        min="0.01"
                         step="0.01"
-                        value={
-                          offer.creditPricePerUnit
-                        }
+                        value={offer.sellerPricePerUnit}
                         onChange={(e) =>
                           setOffer((v) => ({
                             ...v,
-                            creditPricePerUnit:
-                              e.target.value,
+                            sellerPricePerUnit: e.target.value,
                           }))
                         }
                       />
 
-                      <Input
-                        label="EPR Nexuss Service Fee"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={offer.serviceFee}
-                        onChange={(e) =>
-                          setOffer((v) => ({
-                            ...v,
-                            serviceFee:
-                              e.target.value,
-                          }))
-                        }
-                      />
+                      <div className="grid grid-cols-[150px_minmax(0,1fr)] gap-3">
+                        <label className="block">
+                          <span className="block text-sm font-medium text-[#344054] mb-1.5">
+                            Margin method
+                          </span>
+                          <select
+                            className="w-full rounded-lg border border-[#D0D5DD] bg-white px-3 py-2.5 text-sm text-[#344054] outline-none focus:border-[#5AC361] focus:ring-2 focus:ring-[#5AC361]/15"
+                            value={offer.marginType}
+                            onChange={(e) =>
+                              setOffer((v) => ({
+                                ...v,
+                                marginType: e.target.value,
+                              }))
+                            }
+                          >
+                            <option value="percentage">Percentage</option>
+                            <option value="value">₹ / MT</option>
+                          </select>
+                        </label>
+
+                        <Input
+                          label={
+                            offer.marginType === "value"
+                              ? "EPR Nexuss margin / MT"
+                              : "EPR Nexuss margin %"
+                          }
+                          type="number"
+                          min="0"
+                          max={offer.marginType === "percentage" ? "100" : undefined}
+                          step="0.01"
+                          value={offer.marginValue}
+                          onChange={(e) =>
+                            setOffer((v) => ({
+                              ...v,
+                              marginValue: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
 
                       {/* ------------------------------------------------ */}
                       {/* LIVE COMMERCIAL SUMMARY                         */}
@@ -971,52 +969,51 @@ export default function QuotationCenter({
 
                         <div className="mt-3 space-y-2 text-sm">
                           <div className="flex justify-between">
+                            <span className="text-[#6B7280]">Quantity</span>
+
+                            <span className="font-medium">{quantity} MT</span>
+                          </div>
+
+                          <div className="flex justify-between">
                             <span className="text-[#6B7280]">
-                              Quantity
+                              Seller agreed price
                             </span>
 
                             <span className="font-medium">
-                              {quantity} MT
+                              {money(sellerPrice)} / MT
                             </span>
                           </div>
 
                           <div className="flex justify-between">
                             <span className="text-[#6B7280]">
-                              Credit price
-                            </span>
-
-                            <span className="font-medium">
-                              {money(creditPrice)} / MT
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between">
-                            <span className="text-[#6B7280]">
-                              Credits value
+                              Seller settlement
                             </span>
 
                             <span className="font-semibold">
-                              {money(creditSubtotal)}
+                              {money(sellerSubtotal)}
                             </span>
                           </div>
 
                           <div className="flex justify-between">
                             <span className="text-[#6B7280]">
-                              EPR Nexuss commission
+                              Platform margin
                             </span>
 
                             <span className="font-semibold">
-                              {money(serviceFee)}
+                              {money(marginAmount)} (
+                              {marginType === "value"
+                                ? `${money(marginValue)} / MT`
+                                : `${marginValue.toLocaleString("en-IN")}%`})
                             </span>
                           </div>
 
                           <div className="border-t border-[#DDEADF] pt-2 mt-2 flex justify-between">
                             <span className="font-semibold">
-                              Total amount
+                              Buyer quotation total
                             </span>
 
                             <span className="text-base font-bold text-[#2E7D32]">
-                              {money(total)}
+                              {money(buyerTotal)}
                             </span>
                           </div>
                         </div>
@@ -1029,8 +1026,7 @@ export default function QuotationCenter({
                         onChange={(e) =>
                           setOffer((v) => ({
                             ...v,
-                            expiresAt:
-                              e.target.value,
+                            expiresAt: e.target.value,
                           }))
                         }
                       />
@@ -1054,8 +1050,7 @@ export default function QuotationCenter({
                       >
                         {savingOffer
                           ? "Sending..."
-                          : selected.offer?.finalAmount !=
-                              null
+                          : selected.offer?.finalAmount != null
                             ? "Send Revised Quotation"
                             : "Send Quotation"}
                       </Button>

@@ -81,7 +81,9 @@ export function NotificationBell({ compact = false, onNavigate }) {
     const entityId = item.entityId;
 
     if (item.entityType === "deal" && entityId) {
-      onNavigate("deal-room", entityId);
+      if (user?.role === "buyer") {
+        onNavigate("deal-room", entityId);
+      }
       return;
     }
 
@@ -120,7 +122,7 @@ export function NotificationBell({ compact = false, onNavigate }) {
                 <button type="button" onClick={() => markRead(item._id)} className="w-full text-left">
                   <div className="flex gap-3"><div className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${item.read ? "bg-[#CBD5E1]" : "bg-[#5AC361]"}`} /><div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-2"><p className="text-sm font-semibold text-[#0F1923]">{item.title}</p><span className="text-[10px] text-[#9CA3AF] whitespace-nowrap">{formatTime(item.createdAt)}</span></div><p className="text-xs text-[#6B7280] mt-1 leading-relaxed">{item.message}</p></div></div>
                 </button>
-                {onNavigate && (
+                {onNavigate && !(item.entityType === "deal" && user?.role === "seller") && (
                   <button
                     type="button"
                     onClick={() => handleNotificationAction(item)}

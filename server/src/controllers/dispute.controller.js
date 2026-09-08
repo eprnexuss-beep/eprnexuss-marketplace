@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import crypto from "crypto";
 import Dispute from "../models/Dispute.js";
 import Deal from "../models/Deal.js";
 import Document from "../models/Document.js";
@@ -42,6 +43,35 @@ const canAccess = (dispute, user) =>
   user.role === "admin" ||
   String(dispute.buyerId) === String(user._id) ||
   String(dispute.sellerId) === String(user._id);
+
+const saveDisputeEvidenceFile = async (file, ownerId) => {
+  if (!file) return null;
+  const uploadDirectory = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "../../uploads/documents",
+  );
+  await fs.promises.mkdir(uploadDirectory, { recursive: true });
+  const extensionByMimeType = {
+    "application/pdf": ".pdf",
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+  };
+  const extension = extensionByMimeType[file.mimetype] || ".bin";
+  const filename = `${crypto.randomUUID()}${extension}`;
+  const filePath = path.join(uploadDirectory, filename);
+  await fs.promises.writeFile(filePath, file.buffer);
+  const document = await Document.create({
+    owner: ownerId,
+    type: "other",
+    fileName: file.originalname,
+    fileUrl: `/uploads/documents/${filename}`,
+    mimeType: file.mimetype,
+    fileSize: file.size,
+    verificationStatus: "approved",
+  });
+  return { document, filePath };
+};
 
 export const getDisputes = async (req, res) => {
   try {
@@ -118,13 +148,18 @@ export const createDispute = async (req, res) => {
     if (existing) return res.status(409).json({ success: false, message: "This deal already has an active dispute", code: "ACTIVE_DISPUTE_EXISTS", disputeId: existing._id });
 
     let evidence = [];
-    if (evidenceNote?.trim() || documentId) {
-      if (documentId) {
-        if (!mongoose.Types.ObjectId.isValid(documentId)) return res.status(400).json({ success: false, message: "Invalid evidence document ID", code: "INVALID_DOCUMENT_ID" });
-        const document = await Document.findOne({ _id: documentId, owner: req.user._id }).lean();
+    let uploadedEvidence = null;
+    if (req.file) {
+      uploadedEvidence = await saveDisputeEvidenceFile(req.file, req.user._id);
+    }
+    const attachedDocumentId = uploadedEvidence?.document?._id || documentId || null;
+    if (evidenceNote?.trim() || attachedDocumentId) {
+      if (attachedDocumentId && !uploadedEvidence) {
+        if (!mongoose.Types.ObjectId.isValid(attachedDocumentId)) return res.status(400).json({ success: false, message: "Invalid evidence document ID", code: "INVALID_DOCUMENT_ID" });
+        const document = await Document.findOne({ _id: attachedDocumentId, owner: req.user._id }).lean();
         if (!document) return res.status(403).json({ success: false, message: "You can only attach your own documents", code: "FORBIDDEN_DOCUMENT" });
       }
-      evidence = [{ note: String(evidenceNote || "").trim(), documentId: documentId || null, addedBy: req.user._id }];
+      evidence = [{ note: String(evidenceNote || "").trim(), documentId: attachedDocumentId, addedBy: req.user._id }];
     }
 
     const dispute = await Dispute.create({
@@ -189,13 +224,18 @@ export const respondToDispute = async (req, res) => {
       return res.status(409).json({ success: false, message: "It is not currently your turn to respond", code: "NOT_YOUR_TURN" });
     }
 
-    if (documentId) {
-      if (!mongoose.Types.ObjectId.isValid(documentId)) return res.status(400).json({ success: false, message: "Invalid evidence document ID", code: "INVALID_DOCUMENT_ID" });
-      const document = await Document.findOne({ _id: documentId, owner: req.user._id }).lean();
+    let uploadedEvidence = null;
+    if (req.file) {
+      uploadedEvidence = await saveDisputeEvidenceFile(req.file, req.user._id);
+    }
+    const attachedDocumentId = uploadedEvidence?.document?._id || documentId || null;
+    if (attachedDocumentId && !uploadedEvidence) {
+      if (!mongoose.Types.ObjectId.isValid(attachedDocumentId)) return res.status(400).json({ success: false, message: "Invalid evidence document ID", code: "INVALID_DOCUMENT_ID" });
+      const document = await Document.findOne({ _id: attachedDocumentId, owner: req.user._id }).lean();
       if (!document) return res.status(403).json({ success: false, message: "You can only attach your own documents", code: "FORBIDDEN_DOCUMENT" });
     }
 
-    dispute.evidence.push({ note: String(evidenceNote || "").trim() || message.trim(), documentId: documentId || null, addedBy: req.user._id });
+    dispute.evidence.push({ note: String(evidenceNote || "").trim() || message.trim(), documentId: attachedDocumentId, addedBy: req.user._id });
     dispute.lastRespondedBy = req.user._id;
     dispute.lastRespondedAt = new Date();
     dispute.status = "under_review";

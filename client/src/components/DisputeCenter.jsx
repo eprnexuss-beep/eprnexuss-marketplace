@@ -40,6 +40,7 @@ function DisputeForm({ deal, onCreated, onCancel }) {
   const [reason, setReason] = useState("payment");
   const [description, setDescription] = useState("");
   const [evidenceNote, setEvidenceNote] = useState("");
+  const [evidenceFile, setEvidenceFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -51,11 +52,12 @@ function DisputeForm({ deal, onCreated, onCancel }) {
     try {
       setSubmitting(true);
       setError("");
-      const response = await api.post(`/disputes/deal/${deal._id}`, {
-        reason,
-        description: description.trim(),
-        evidenceNote: evidenceNote.trim(),
-      });
+      const formData = new FormData();
+      formData.append("reason", reason);
+      formData.append("description", description.trim());
+      formData.append("evidenceNote", evidenceNote.trim());
+      if (evidenceFile) formData.append("evidence", evidenceFile);
+      const response = await api.post(`/disputes/deal/${deal._id}`, formData);
       onCreated(response.data?.dispute);
     } catch (err) {
       setError(err.response?.data?.message || "Unable to open the dispute.");
@@ -118,6 +120,21 @@ function DisputeForm({ deal, onCreated, onCancel }) {
           className="min-h-[90px]"
         />
       </div>
+      <div className="mt-4">
+        <label className="block text-sm font-medium text-[#344054]">
+          Supporting document (optional)
+        </label>
+        <input
+          type="file"
+          accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
+          onChange={(event) => setEvidenceFile(event.target.files?.[0] || null)}
+          className="mt-2 block w-full rounded-xl border border-[#D0D5DD] bg-white px-3 py-2 text-sm text-[#344054] file:mr-3 file:rounded-lg file:border-0 file:bg-[#F0FBF1] file:px-3 file:py-2 file:text-sm file:font-medium file:text-[#2E7D32]"
+        />
+        <p className="mt-1 text-[11px] text-[#98A2B3]">PDF, JPG, PNG or WEBP · Max 10 MB</p>
+        {evidenceFile ? (
+          <p className="mt-1 text-xs font-medium text-[#2E7D32]">Selected: {evidenceFile.name}</p>
+        ) : null}
+      </div>
       {error ? <p className="mt-3 text-xs text-[#B42318]">{error}</p> : null}
       <div className="mt-4 flex flex-wrap justify-end gap-2">
         <Button variant="outline" onClick={onCancel} disabled={submitting}>
@@ -134,6 +151,7 @@ function DisputeForm({ deal, onCreated, onCancel }) {
 function DisputeDetails({ dispute, role, onUpdated }) {
   const [message, setMessage] = useState("");
   const [evidenceNote, setEvidenceNote] = useState("");
+  const [evidenceFile, setEvidenceFile] = useState(null);
   const [responding, setResponding] = useState(false);
   const [downloadingId, setDownloadingId] = useState("");
   const [error, setError] = useState("");
@@ -180,12 +198,14 @@ function DisputeDetails({ dispute, role, onUpdated }) {
     try {
       setResponding(true);
       setError("");
-      const response = await api.patch(`/disputes/${dispute._id}/respond`, {
-        message: message.trim(),
-        evidenceNote: evidenceNote.trim(),
-      });
+      const formData = new FormData();
+      formData.append("message", message.trim());
+      formData.append("evidenceNote", evidenceNote.trim());
+      if (evidenceFile) formData.append("evidence", evidenceFile);
+      const response = await api.patch(`/disputes/${dispute._id}/respond`, formData);
       setMessage("");
       setEvidenceNote("");
+      setEvidenceFile(null);
       onUpdated(response.data?.dispute);
     } catch (err) {
       setError(err.response?.data?.message || "Unable to add the response.");
@@ -323,6 +343,17 @@ function DisputeDetails({ dispute, role, onUpdated }) {
             placeholder="Optional supporting evidence details"
             maxLength={3000}
           />
+          <div className="mt-3">
+            <label className="block text-sm font-medium text-[#344054]">Supporting document (optional)</label>
+            <input
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
+              onChange={(event) => setEvidenceFile(event.target.files?.[0] || null)}
+              className="mt-2 block w-full rounded-xl border border-[#D0D5DD] bg-white px-3 py-2 text-sm text-[#344054] file:mr-3 file:rounded-lg file:border-0 file:bg-[#F0FBF1] file:px-3 file:py-2 file:text-sm file:font-medium file:text-[#2E7D32]"
+            />
+            <p className="mt-1 text-[11px] text-[#98A2B3]">PDF, JPG, PNG or WEBP · Max 10 MB</p>
+            {evidenceFile ? <p className="mt-1 text-xs font-medium text-[#2E7D32]">Selected: {evidenceFile.name}</p> : null}
+          </div>
           {error ? (
             <p className="mt-2 text-xs text-[#B42318]">{error}</p>
           ) : null}

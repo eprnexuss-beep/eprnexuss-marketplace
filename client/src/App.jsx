@@ -118,7 +118,7 @@ function Navbar({ page, onNavigate }) {
   const publicLinks = [
     { label: "EPR Credits", page: "epr-credits" },
     ...(user?.role === "buyer" || !isAuthenticated
-      ? [{ label: "Post Requirement", page: "buyer-dashboard" }]
+      ? [{ label: "Post Requirement", page: "post-requirement" }]
       : []),
     { label: "How It Works", page: "how-it-works" },
     { label: "About Us", page: "about-us" },
@@ -321,10 +321,10 @@ function PublicFooter({ user, onNavigate }) {
             {
               title: "Platform",
               links: [
-                { label: "Browse Credits", page: "marketplace" },
+                { label: "Browse Credits", page: "epr-credits" },
                 ...(user?.role === "seller" || user?.role === "admin"
                   ? []
-                  : [{ label: "Post Requirement", page: "buyer-dashboard" }]),
+                  : [{ label: "Post Requirement", page: "post-requirement" }]),
                 { label: "How It Works", page: "how-it-works" },
               ],
             },
@@ -430,7 +430,7 @@ function RouterApp() {
   const legacyNavigate = (target, id) => {
     const paths = {
       home: "/",
-      marketplace: "/marketplace",
+      marketplace: "/epr-credits",
       "epr-credits": "/epr-credits",
       "how-it-works": "/how-it-works",
       "about-us": "/about-us",
@@ -443,6 +443,7 @@ function RouterApp() {
       verification: "/verification",
       "seller-dashboard": "/seller",
       "buyer-dashboard": "/buyer",
+      "post-requirement": "/buyer?section=requirements&post=1",
       "admin-dashboard": "/admin",
       "add-listing": "/seller/listings/new",
     };
@@ -517,12 +518,7 @@ function RouterApp() {
           <Route path="/" element={<RootRoute onNavigate={legacyNavigate} />} />
           <Route
             path="/marketplace"
-            element={
-              <HomeRoute
-                component={MarketplacePage}
-                onNavigate={legacyNavigate}
-              />
-            }
+            element={<Navigate to="/epr-credits" replace />}
           />
           <Route
             path="/epr-credits"

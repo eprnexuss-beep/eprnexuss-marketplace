@@ -4,7 +4,11 @@ import { useSearchParams } from "react-router-dom";
 import { CREDIT_TYPES } from "../data/mock";
 import api from "../services/api.js";
 import { useAuth } from "../context/AuthContext.jsx";
-import { NotificationBell, ProfileMenu, ProfileSection } from "../components/AccountTools.jsx";
+import {
+  NotificationBell,
+  ProfileMenu,
+  ProfileSection,
+} from "../components/AccountTools.jsx";
 import { INDIAN_LOCATIONS } from "../constants/indianStates.js";
 import {
   Badge,
@@ -41,27 +45,76 @@ function CompactBuyerRequests({
   const [query, setQuery] = useState("");
 
   const getState = (request) => {
-    const deal = deals.find((item) => String(item.requestId || "") === String(request._id));
+    const deal = deals.find(
+      (item) => String(item.requestId || "") === String(request._id),
+    );
     const status = String(request.status || "pending").toLowerCase();
     const hasQuotation = request.offer?.finalAmount != null;
     const accepted = Boolean(request.offer?.acceptedAt);
 
     if (["completed"].includes(status) || deal?.status === "completed") {
-      return { key: "completed", label: "Completed", next: "Everything is done", action: null, deal, step: 5 };
+      return {
+        key: "completed",
+        label: "Completed",
+        next: "Everything is done",
+        action: null,
+        deal,
+        step: 5,
+      };
     }
-    if (["rejected", "cancelled"].includes(status) || ["rejected", "cancelled"].includes(String(deal?.status || "").toLowerCase())) {
-      return { key: "closed", label: status === "rejected" ? "Not approved" : "Cancelled", next: "No action required", action: null, deal, step: 0 };
+    if (
+      ["rejected", "cancelled"].includes(status) ||
+      ["rejected", "cancelled"].includes(
+        String(deal?.status || "").toLowerCase(),
+      )
+    ) {
+      return {
+        key: "closed",
+        label: status === "rejected" ? "Not approved" : "Cancelled",
+        next: "No action required",
+        action: null,
+        deal,
+        step: 0,
+      };
     }
     if (deal || accepted) {
-      return { key: "payment", label: "Payment stage", next: "Continue to payment", action: "deal", deal, step: 4 };
+      return {
+        key: "payment",
+        label: "Payment stage",
+        next: "Continue to payment",
+        action: "deal",
+        deal,
+        step: 4,
+      };
     }
     if (hasQuotation || ["offer_sent", "approved"].includes(status)) {
-      return { key: "quotation", label: "Quotation ready", next: "Review your quotation", action: "quotation", deal, step: 3 };
+      return {
+        key: "quotation",
+        label: "Quotation ready",
+        next: "Review your quotation",
+        action: "quotation",
+        deal,
+        step: 3,
+      };
     }
     if (["matched", "negotiating", "reviewing"].includes(status)) {
-      return { key: "matching", label: "Being processed", next: "EPR Nexuss is working on it", action: null, deal, step: 2 };
+      return {
+        key: "matching",
+        label: "Being processed",
+        next: "EPR Nexuss is working on it",
+        action: null,
+        deal,
+        step: 2,
+      };
     }
-    return { key: "requested", label: "Request sent", next: "Waiting for confirmation", action: null, deal, step: 1 };
+    return {
+      key: "requested",
+      label: "Request sent",
+      next: "Waiting for confirmation",
+      action: null,
+      deal,
+      step: 1,
+    };
   };
 
   const items = requests.map((request) => ({ request, ...getState(request) }));
@@ -80,8 +133,17 @@ function CompactBuyerRequests({
     const q = query.trim().toLowerCase();
     if (!matchesFilter) return false;
     if (!q) return true;
-    return [request._id, request.listing?.category, request.listing?.location, request.status, label]
-      .filter(Boolean).join(" ").toLowerCase().includes(q);
+    return [
+      request._id,
+      request.listing?.category,
+      request.listing?.location,
+      request.status,
+      label,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .includes(q);
   });
 
   const statusClasses = {
@@ -93,26 +155,80 @@ function CompactBuyerRequests({
     closed: "bg-[#F2F4F7] text-[#475467] border-[#D0D5DD]",
   };
 
-  if (loading) return <Card><div className="space-y-3 p-5"><div className="h-5 w-36 animate-pulse rounded bg-[#F2F4F7]" /><div className="h-20 animate-pulse rounded-xl bg-[#F8FAFC]" /><div className="h-20 animate-pulse rounded-xl bg-[#F8FAFC]" /></div></Card>;
-  if (error) return <Card><div className="p-8 text-center"><p className="text-sm font-semibold text-[#B42318]">Unable to load your requests</p><p className="mt-1 text-sm text-[#667085]">{error}</p><Button size="sm" variant="outline" className="mt-4" onClick={onRetry}>Retry</Button></div></Card>;
+  if (loading)
+    return (
+      <Card>
+        <div className="space-y-3 p-5">
+          <div className="h-5 w-36 animate-pulse rounded bg-[#F2F4F7]" />
+          <div className="h-20 animate-pulse rounded-xl bg-[#F8FAFC]" />
+          <div className="h-20 animate-pulse rounded-xl bg-[#F8FAFC]" />
+        </div>
+      </Card>
+    );
+  if (error)
+    return (
+      <Card>
+        <div className="p-8 text-center">
+          <p className="text-sm font-semibold text-[#B42318]">
+            Unable to load your requests
+          </p>
+          <p className="mt-1 text-sm text-[#667085]">{error}</p>
+          <Button
+            size="sm"
+            variant="outline"
+            className="mt-4"
+            onClick={onRetry}
+          >
+            Retry
+          </Button>
+        </div>
+      </Card>
+    );
 
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#98A2B3]">Your requested listings</p>
-          <h2 className="mt-1 font-heading text-2xl font-semibold text-[#101828]">My Requests</h2>
-          <p className="mt-1 max-w-2xl text-sm text-[#667085]">Every credit listing you have requested, with its current status and next step.</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#98A2B3]">
+            Your requested listings
+          </p>
+          <h2 className="mt-1 font-heading text-2xl font-semibold text-[#101828]">
+            My Requests
+          </h2>
+          <p className="mt-1 max-w-2xl text-sm text-[#667085]">
+            Every credit listing you have requested, with its current status and
+            next step.
+          </p>
         </div>
-        <span className="rounded-full bg-[#F2F4F7] px-3 py-1.5 text-xs font-semibold text-[#475467]">{requests.length} request{requests.length === 1 ? "" : "s"}</span>
+        <span className="rounded-full bg-[#F2F4F7] px-3 py-1.5 text-xs font-semibold text-[#475467]">
+          {requests.length} request{requests.length === 1 ? "" : "s"}
+        </span>
       </div>
 
       <Card className="overflow-hidden">
         <div className="border-b border-[#EAECF0] bg-[#FCFCFD] p-4">
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search requested listings..." className="w-full rounded-xl border border-[#D0D5DD] bg-white px-3.5 py-2.5 text-sm text-[#344054] outline-none placeholder:text-[#98A2B3] focus:border-[#3EA646]" />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search requested listings..."
+            className="w-full rounded-xl border border-[#D0D5DD] bg-white px-3.5 py-2.5 text-sm text-[#344054] outline-none placeholder:text-[#98A2B3] focus:border-[#3EA646]"
+          />
           <div className="mt-3 flex flex-wrap gap-2">
-            {[["all","All"],["requested","Requested"],["matching","Processing"],["quotation","Quotation"],["payment","Payment"],["completed","Completed"],["closed","Closed"]].map(([key,label]) => (
-              <button key={key} type="button" onClick={() => setFilter(key)} className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${filter === key ? "bg-[#101828] text-white" : "bg-[#F2F4F7] text-[#475467] hover:bg-[#E4E7EC]"}`}>
+            {[
+              ["all", "All"],
+              ["requested", "Requested"],
+              ["matching", "Processing"],
+              ["quotation", "Quotation"],
+              ["payment", "Payment"],
+              ["completed", "Completed"],
+              ["closed", "Closed"],
+            ].map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setFilter(key)}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${filter === key ? "bg-[#101828] text-white" : "bg-[#F2F4F7] text-[#475467] hover:bg-[#E4E7EC]"}`}
+              >
                 {label} <span className="ml-1 opacity-70">{counts[key]}</span>
               </button>
             ))}
@@ -120,57 +236,160 @@ function CompactBuyerRequests({
         </div>
 
         {visible.length === 0 ? (
-          <div className="px-6 py-14 text-center"><p className="text-sm font-semibold text-[#344054]">No requested listings found</p><p className="mt-1 text-sm text-[#667085]">When you request a listing, it will appear here and stay here until the request is completed or closed.</p></div>
+          <div className="px-6 py-14 text-center">
+            <p className="text-sm font-semibold text-[#344054]">
+              No requested listings found
+            </p>
+            <p className="mt-1 text-sm text-[#667085]">
+              When you request a listing, it will appear here and stay here
+              until the request is completed or closed.
+            </p>
+          </div>
         ) : (
           <div className="space-y-3 p-4 sm:p-5">
-            {visible.map(({ request, key, label, next, action, deal, step }) => {
-              const id = request._id;
-              const category = request.listing?.category || "EPR Credit";
-              const quantity = request.requestedQuantity ?? 0;
-              const price = request.listing?.price;
-              const location = request.listing?.location || "—";
-              const steps = ["Request sent", "Being processed", "Quotation", "Payment", "Completed"];
-              const progress = key === "closed" ? 0 : Math.min(5, step);
-              return (
-                <div key={id} className="rounded-2xl border border-[#EAECF0] bg-white p-4 shadow-sm sm:p-5">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-lg bg-[#EEF8EF] px-2.5 py-1 text-[11px] font-bold text-[#247A2B]">REQUESTED LISTING</span>
-                        <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${statusClasses[key]}`}>{label}</span>
+            {visible.map(
+              ({ request, key, label, next, action, deal, step }) => {
+                const id = request._id;
+                const category = request.listing?.category || "EPR Credit";
+                const quantity = request.requestedQuantity ?? 0;
+                const price = request.listing?.price;
+                const location = request.listing?.location || "—";
+                const steps = [
+                  "Request sent",
+                  "Being processed",
+                  "Quotation",
+                  "Payment",
+                  "Completed",
+                ];
+                const progress = key === "closed" ? 0 : Math.min(5, step);
+                return (
+                  <div
+                    key={id}
+                    className="rounded-2xl border border-[#EAECF0] bg-white p-4 shadow-sm sm:p-5"
+                  >
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-lg bg-[#EEF8EF] px-2.5 py-1 text-[11px] font-bold text-[#247A2B]">
+                            REQUESTED LISTING
+                          </span>
+                          <span
+                            className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${statusClasses[key]}`}
+                          >
+                            {label}
+                          </span>
+                        </div>
+                        <h3 className="mt-2 text-base font-semibold text-[#101828]">
+                          {category}
+                        </h3>
+                        <p className="mt-1 text-xs text-[#667085]">
+                          Request #{String(id).slice(-8)} ·{" "}
+                          {Number(quantity).toLocaleString("en-IN")} MT ·{" "}
+                          {location}
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#667085]">
+                          {price != null && (
+                            <span>
+                              Listed price ₹
+                              {Number(price).toLocaleString("en-IN")}/MT
+                            </span>
+                          )}
+                          {request.listing?.complianceYear && (
+                            <span>FY {request.listing.complianceYear}</span>
+                          )}
+                          {request.createdAt && (
+                            <span>
+                              Requested{" "}
+                              {new Date(request.createdAt).toLocaleDateString(
+                                "en-IN",
+                              )}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <h3 className="mt-2 text-base font-semibold text-[#101828]">{category}</h3>
-                      <p className="mt-1 text-xs text-[#667085]">Request #{String(id).slice(-8)} · {Number(quantity).toLocaleString("en-IN")} MT · {location}</p>
-                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#667085]">
-                        {price != null && <span>Listed price ₹{Number(price).toLocaleString("en-IN")}/MT</span>}
-                        {request.listing?.complianceYear && <span>FY {request.listing.complianceYear}</span>}
-                        {request.createdAt && <span>Requested {new Date(request.createdAt).toLocaleDateString("en-IN")}</span>}
+                      <div className="flex shrink-0 flex-wrap gap-2 lg:justify-end">
+                        {action === "quotation" && (
+                          <Button
+                            size="sm"
+                            onClick={() => onOpenQuotation(request)}
+                          >
+                            Review quotation →
+                          </Button>
+                        )}
+                        {action === "deal" && deal && (
+                          <Button size="sm" onClick={() => onOpenDeals(deal)}>
+                            Continue →
+                          </Button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => onOpenMessages()}
+                          className="rounded-lg border border-[#D0D5DD] px-3 py-2 text-xs font-semibold text-[#475467] hover:bg-[#F9FAFB]"
+                        >
+                          Messages
+                        </button>
                       </div>
                     </div>
-                    <div className="flex shrink-0 flex-wrap gap-2 lg:justify-end">
-                      {action === "quotation" && <Button size="sm" onClick={() => onOpenQuotation(request)}>Review quotation →</Button>}
-                      {action === "deal" && deal && <Button size="sm" onClick={() => onOpenDeals(deal)}>Continue →</Button>}
-                      <button type="button" onClick={() => onOpenMessages()} className="rounded-lg border border-[#D0D5DD] px-3 py-2 text-xs font-semibold text-[#475467] hover:bg-[#F9FAFB]">Messages</button>
-                    </div>
+
+                    {key !== "closed" && (
+                      <div className="mt-5 rounded-xl border border-[#EAECF0] bg-[#FCFCFD] p-3.5 sm:p-4">
+                        <div className="mb-3 flex items-center justify-between gap-3">
+                          <p className="text-xs font-semibold text-[#344054]">
+                            Request status
+                          </p>
+                          <p className="text-xs font-medium text-[#667085]">
+                            {next}
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-5 gap-1">
+                          {steps.map((item, index) => {
+                            const done = index < progress;
+                            const current = index === progress - 1;
+                            return (
+                              <div key={item} className="min-w-0">
+                                <div
+                                  className={`mx-auto flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold ${done ? "bg-[#3EA646] text-white" : "bg-[#EAECF0] text-[#98A2B3]"}`}
+                                >
+                                  {done ? "✓" : index + 1}
+                                </div>
+                                <p
+                                  className={`mt-1 text-center text-[9px] leading-3 sm:text-[10px] ${current ? "font-bold text-[#247A2B]" : "text-[#98A2B3]"}`}
+                                >
+                                  {item}
+                                </p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {(request.notes || request.rejectionReason) && (
+                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                        <div className="rounded-xl bg-[#F8FAFC] p-3">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-[#98A2B3]">
+                            Your notes
+                          </p>
+                          <p className="mt-1 text-xs text-[#475467]">
+                            {request.notes || "—"}
+                          </p>
+                        </div>
+                        {request.rejectionReason && (
+                          <div className="rounded-xl bg-[#FEF3F2] p-3">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-[#B42318]">
+                              Reason
+                            </p>
+                            <p className="mt-1 text-xs text-[#B42318]">
+                              {request.rejectionReason}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-
-                  {key !== "closed" && (
-                    <div className="mt-5 rounded-xl border border-[#EAECF0] bg-[#FCFCFD] p-3.5 sm:p-4">
-                      <div className="mb-3 flex items-center justify-between gap-3"><p className="text-xs font-semibold text-[#344054]">Request status</p><p className="text-xs font-medium text-[#667085]">{next}</p></div>
-                      <div className="grid grid-cols-5 gap-1">
-                        {steps.map((item, index) => {
-                          const done = index < progress;
-                          const current = index === progress - 1;
-                          return <div key={item} className="min-w-0"><div className={`mx-auto flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold ${done ? "bg-[#3EA646] text-white" : "bg-[#EAECF0] text-[#98A2B3]"}`}>{done ? "✓" : index + 1}</div><p className={`mt-1 text-center text-[9px] leading-3 sm:text-[10px] ${current ? "font-bold text-[#247A2B]" : "text-[#98A2B3]"}`}>{item}</p></div>;
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {(request.notes || request.rejectionReason) && <div className="mt-3 grid gap-3 sm:grid-cols-2"><div className="rounded-xl bg-[#F8FAFC] p-3"><p className="text-[10px] font-bold uppercase tracking-wider text-[#98A2B3]">Your notes</p><p className="mt-1 text-xs text-[#475467]">{request.notes || "—"}</p></div>{request.rejectionReason && <div className="rounded-xl bg-[#FEF3F2] p-3"><p className="text-[10px] font-bold uppercase tracking-wider text-[#B42318]">Reason</p><p className="mt-1 text-xs text-[#B42318]">{request.rejectionReason}</p></div>}</div>}
-                </div>
-              );
-            })}
+                );
+              },
+            )}
           </div>
         )}
       </Card>
@@ -475,7 +694,10 @@ function PostRequirementModal({ onClose, onCreated }) {
           </div>
           <Select
             label="Location Preference"
-            options={[{ label: "Any Location", value: "" }, ...INDIAN_LOCATIONS.map((s) => ({ label: s, value: s }))]}
+            options={[
+              { label: "Any Location", value: "" },
+              ...INDIAN_LOCATIONS.map((s) => ({ label: s, value: s })),
+            ]}
             value={form.location}
             onChange={(e) =>
               setForm((f) => ({ ...f, location: e.target.value }))
@@ -577,13 +799,43 @@ function PostRequirementModal({ onClose, onCreated }) {
 function BuyerDashboard({ onNavigate }) {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const validSections = useMemo(() => new Set(["dashboard", "requirements", "matching", "requests", "quotations", "deals", "watchlist", "disputes", "messages", "profile"]), []);
-  const validDealTabs = useMemo(() => new Set(["overview", "messages", "quotation", "payment", "dispute", "review"]), []);
-  const initialSection = validSections.has(searchParams.get("section")) ? searchParams.get("section") : "dashboard";
+  const validSections = useMemo(
+    () =>
+      new Set([
+        "dashboard",
+        "requirements",
+        "matching",
+        "requests",
+        "quotations",
+        "deals",
+        "watchlist",
+        "disputes",
+        "messages",
+        "profile",
+      ]),
+    [],
+  );
+  const validDealTabs = useMemo(
+    () =>
+      new Set([
+        "overview",
+        "messages",
+        "quotation",
+        "payment",
+        "dispute",
+        "review",
+      ]),
+    [],
+  );
+  const initialSection = validSections.has(searchParams.get("section"))
+    ? searchParams.get("section")
+    : "dashboard";
   const [active, setActive] = useState(initialSection);
 
   const openDealId = searchParams.get("deal");
-  const openDealTab = validDealTabs.has(searchParams.get("dealTab")) ? searchParams.get("dealTab") : "overview";
+  const openDealTab = validDealTabs.has(searchParams.get("dealTab"))
+    ? searchParams.get("dealTab")
+    : "overview";
 
   const openDealRoom = (deal, tab = "overview") => {
     if (!deal?._id) return;
@@ -612,6 +864,15 @@ function BuyerDashboard({ onNavigate }) {
   };
   const [showPostModal, setShowPostModal] = useState(false);
 
+  useEffect(() => {
+    if (searchParams.get("post") === "1") {
+      setShowPostModal(true);
+      const next = new URLSearchParams(searchParams);
+      next.delete("post");
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
   const [buyerRequirements, setBuyerRequirements] = useState([]);
   const [requirementLoading, setRequirementLoading] = useState(true);
   const [requirementError, setRequirementError] = useState("");
@@ -635,6 +896,10 @@ function BuyerDashboard({ onNavigate }) {
   const [matchAlerts, setMatchAlerts] = useState([]);
   const [matchAlertsLoading, setMatchAlertsLoading] = useState(false);
   const [matchAlertsError, setMatchAlertsError] = useState("");
+
+  const openDeal = buyerDeals.find(
+    (item) => String(item._id) === String(openDealId),
+  );
 
   const buyerCompany = user?.company?.trim() || user?.name?.trim() || "Buyer";
   const buyerName = user?.name?.trim() || "Buyer";
@@ -1087,7 +1352,7 @@ function BuyerDashboard({ onNavigate }) {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => onNavigate("marketplace")}
+              onClick={() => onNavigate("epr-credits")}
               className="hidden sm:inline-flex"
             >
               Browse Credits
@@ -1139,7 +1404,7 @@ function BuyerDashboard({ onNavigate }) {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => onNavigate("marketplace")}
+                  onClick={() => onNavigate("epr-credits")}
                 >
                   Browse Credits
                 </Button>
@@ -1974,11 +2239,28 @@ function BuyerDashboard({ onNavigate }) {
                   Quotations
                 </h2>
                 <p className="mt-1 text-sm text-[#667085]">
-                  Review offers from EPR Nexuss and continue directly to your deal.
+                  Review offers from EPR Nexuss and continue directly to your
+                  deal.
                 </p>
               </div>
               <span className="rounded-full bg-[#F2F4F7] px-3 py-1.5 text-xs font-semibold text-[#475467]">
-                {buyerRequests.filter((r) => r.offer?.finalAmount != null && !["completed", "cancelled", "rejected"].includes(r.status)).length} quotation{buyerRequests.filter((r) => r.offer?.finalAmount != null && !["completed", "cancelled", "rejected"].includes(r.status)).length === 1 ? "" : "s"}
+                {
+                  buyerRequests.filter(
+                    (r) =>
+                      r.offer?.finalAmount != null &&
+                      !["completed", "cancelled", "rejected"].includes(
+                        r.status,
+                      ),
+                  ).length
+                }{" "}
+                quotation
+                {buyerRequests.filter(
+                  (r) =>
+                    r.offer?.finalAmount != null &&
+                    !["completed", "cancelled", "rejected"].includes(r.status),
+                ).length === 1
+                  ? ""
+                  : "s"}
               </span>
             </div>
 
@@ -1992,26 +2274,55 @@ function BuyerDashboard({ onNavigate }) {
             ) : requestError ? (
               <Card>
                 <div className="p-8 text-center">
-                  <p className="text-sm font-semibold text-[#B42318]">Unable to load quotations</p>
+                  <p className="text-sm font-semibold text-[#B42318]">
+                    Unable to load quotations
+                  </p>
                   <p className="mt-1 text-sm text-[#667085]">{requestError}</p>
-                  <Button size="sm" variant="outline" className="mt-4" onClick={fetchBuyerData}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-4"
+                    onClick={fetchBuyerData}
+                  >
                     Retry
                   </Button>
                 </div>
               </Card>
-            ) : buyerRequests.filter((r) => r.offer?.finalAmount != null && !["completed", "cancelled", "rejected"].includes(r.status)).length === 0 ? (
+            ) : buyerRequests.filter(
+                (r) =>
+                  r.offer?.finalAmount != null &&
+                  !["completed", "cancelled", "rejected"].includes(r.status),
+              ).length === 0 ? (
               <Card>
                 <div className="flex flex-col items-center justify-center px-6 py-14 text-center">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F0FBF1] text-[#3EA646]">
-                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 6h8M8 10h8M8 14h5m-8 7h10a3 3 0 003-3V6a3 3 0 00-3-3H8a3 3 0 00-3 3v12a3 3 0 003 3z" />
+                    <svg
+                      className="h-6 w-6"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={1.7}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M8 6h8M8 10h8M8 14h5m-8 7h10a3 3 0 003-3V6a3 3 0 00-3-3H8a3 3 0 00-3 3v12a3 3 0 003 3z"
+                      />
                     </svg>
                   </div>
-                  <p className="mt-4 font-heading text-sm font-semibold text-[#344054]">No quotations yet</p>
-                  <p className="mt-1 max-w-md text-sm text-[#667085]">
-                    Once EPR Nexuss issues a commercial quotation for one of your requests, it will appear here.
+                  <p className="mt-4 font-heading text-sm font-semibold text-[#344054]">
+                    No quotations yet
                   </p>
-                  <Button size="sm" variant="outline" className="mt-4" onClick={() => setActive("requests")}>
+                  <p className="mt-1 max-w-md text-sm text-[#667085]">
+                    Once EPR Nexuss issues a commercial quotation for one of
+                    your requests, it will appear here.
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-4"
+                    onClick={() => setActive("requests")}
+                  >
                     View my requests
                   </Button>
                 </div>
@@ -2019,14 +2330,33 @@ function BuyerDashboard({ onNavigate }) {
             ) : (
               <div className="space-y-3">
                 {buyerRequests
-                  .filter((request) => request.offer?.finalAmount != null && !["completed", "cancelled", "rejected"].includes(request.status))
+                  .filter(
+                    (request) =>
+                      request.offer?.finalAmount != null &&
+                      !["completed", "cancelled", "rejected"].includes(
+                        request.status,
+                      ),
+                  )
                   .map((request) => {
                     const offer = request.offer;
-                    const requestCompleted = ["completed", "cancelled", "rejected"].includes(request.status);
-                    const accepted = Boolean(offer.acceptedAt) || request.status === "offer_accepted" || request.status === "approved";
-                    const expired = offer.expiresAt && new Date(offer.expiresAt).getTime() < Date.now();
-                    const linkedDeal = buyerDeals.find((deal) => String(deal.requestId || "") === String(request._id));
-                    const quotationActionable = !requestCompleted && !accepted && !expired && !linkedDeal;
+                    const requestCompleted = [
+                      "completed",
+                      "cancelled",
+                      "rejected",
+                    ].includes(request.status);
+                    const accepted =
+                      Boolean(offer.acceptedAt) ||
+                      request.status === "offer_accepted" ||
+                      request.status === "approved";
+                    const expired =
+                      offer.expiresAt &&
+                      new Date(offer.expiresAt).getTime() < Date.now();
+                    const linkedDeal = buyerDeals.find(
+                      (deal) =>
+                        String(deal.requestId || "") === String(request._id),
+                    );
+                    const quotationActionable =
+                      !requestCompleted && !accepted && !expired && !linkedDeal;
 
                     return (
                       <Card key={request._id} className="overflow-hidden">
@@ -2035,33 +2365,76 @@ function BuyerDashboard({ onNavigate }) {
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-2">
                                 <h3 className="font-heading text-base font-semibold text-[#101828]">
-                                  {request.listing?.category || request.type || "EPR Credit"}
+                                  {request.listing?.category ||
+                                    request.type ||
+                                    "EPR Credit"}
                                 </h3>
-                                <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${requestCompleted ? "bg-[#F2F4F7] text-[#667085]" : accepted ? "bg-[#EBF8EC] text-[#26702B]" : expired ? "bg-[#FEF3F2] text-[#B42318]" : "bg-[#FFF7E8] text-[#B54708]"}`}>
-                                  {requestCompleted ? "Completed" : accepted ? "Accepted" : expired ? "Expired" : "Action required"}
+                                <span
+                                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${requestCompleted ? "bg-[#F2F4F7] text-[#667085]" : accepted ? "bg-[#EBF8EC] text-[#26702B]" : expired ? "bg-[#FEF3F2] text-[#B42318]" : "bg-[#FFF7E8] text-[#B54708]"}`}
+                                >
+                                  {requestCompleted
+                                    ? "Completed"
+                                    : accepted
+                                      ? "Accepted"
+                                      : expired
+                                        ? "Expired"
+                                        : "Action required"}
                                 </span>
                               </div>
                               <p className="mt-1 text-xs text-[#667085]">
-                                Request #{String(request._id).slice(-8)} · {Number(request.requestedQuantity || 0).toLocaleString("en-IN")} MT · {request.listing?.location || request.location || "Location not specified"}
+                                Request #{String(request._id).slice(-8)} ·{" "}
+                                {Number(
+                                  request.requestedQuantity || 0,
+                                ).toLocaleString("en-IN")}{" "}
+                                MT ·{" "}
+                                {request.listing?.location ||
+                                  request.location ||
+                                  "Location not specified"}
                               </p>
                               <p className="mt-2 text-[11px] text-[#98A2B3]">
-                                Quotation #{offer.version || 1} · Issued {offer.sentAt ? new Date(offer.sentAt).toLocaleDateString("en-IN") : "—"}
+                                Quotation #{offer.version || 1} · Issued{" "}
+                                {offer.sentAt
+                                  ? new Date(offer.sentAt).toLocaleDateString(
+                                      "en-IN",
+                                    )
+                                  : "—"}
                               </p>
                             </div>
 
                             <div className="grid grid-cols-2 gap-2 sm:min-w-[360px]">
                               <div className="rounded-xl bg-[#F8FAFC] p-3">
-                                <p className="text-[10px] font-semibold uppercase tracking-wide text-[#98A2B3]">Credit value</p>
-                                <p className="mt-1 text-sm font-semibold text-[#344054]">₹{Number(offer.creditSubtotal || 0).toLocaleString("en-IN")}</p>
+                                <p className="text-[10px] font-semibold uppercase tracking-wide text-[#98A2B3]">
+                                  Price / MT
+                                </p>
+                                <p className="mt-1 text-sm font-semibold text-[#344054]">
+                                  ₹
+                                  {Number(
+                                    offer.creditPricePerUnit || 0,
+                                  ).toLocaleString("en-IN")}
+                                </p>
                               </div>
                               <div className="rounded-xl bg-[#F8FAFC] p-3">
-                                <p className="text-[10px] font-semibold uppercase tracking-wide text-[#98A2B3]">Service fee</p>
-                                <p className="mt-1 text-sm font-semibold text-[#344054]">₹{Number(offer.serviceFee || 0).toLocaleString("en-IN")}</p>
+                                <p className="text-[10px] font-semibold uppercase tracking-wide text-[#98A2B3]">
+                                  Quantity
+                                </p>
+                                <p className="mt-1 text-sm font-semibold text-[#344054]">
+                                  {Number(
+                                    request.requestedQuantity || 0,
+                                  ).toLocaleString("en-IN")}{" "}
+                                  MT
+                                </p>
                               </div>
                               <div className="col-span-2 rounded-xl border border-[#DDEADF] bg-[#F0FBF1] p-3">
                                 <div className="flex items-center justify-between gap-3">
-                                  <p className="text-xs font-semibold text-[#26702B]">Buyer pays</p>
-                                  <p className="text-lg font-bold text-[#26702B]">₹{Number(offer.finalAmount).toLocaleString("en-IN")}</p>
+                                  <p className="text-xs font-semibold text-[#26702B]">
+                                    Buyer pays
+                                  </p>
+                                  <p className="text-lg font-bold text-[#26702B]">
+                                    ₹
+                                    {Number(offer.finalAmount).toLocaleString(
+                                      "en-IN",
+                                    )}
+                                  </p>
                                 </div>
                               </div>
                             </div>
@@ -2076,10 +2449,22 @@ function BuyerDashboard({ onNavigate }) {
                           <div className="mt-4 flex flex-col gap-3 border-t border-[#E5EAF0] pt-4 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                               <p className="text-xs font-semibold text-[#344054]">
-                                {requestCompleted ? "Transaction completed" : accepted ? "Quotation accepted" : expired ? "Quotation expired" : "Next step: review and accept"}
+                                {requestCompleted
+                                  ? "Transaction completed"
+                                  : accepted
+                                    ? "Quotation accepted"
+                                    : expired
+                                      ? "Quotation expired"
+                                      : "Next step: review and accept"}
                               </p>
                               <p className="mt-0.5 text-xs text-[#667085]">
-                                {requestCompleted ? "This request is closed. The quotation is no longer actionable." : accepted ? "Continue in your Deal Room to complete the transaction." : expired ? "Contact EPR Nexuss if you need a revised quotation." : "Commercial terms are locked once you accept."}
+                                {requestCompleted
+                                  ? "This request is closed. The quotation is no longer actionable."
+                                  : accepted
+                                    ? "Continue in your Deal Room to complete the transaction."
+                                    : expired
+                                      ? "Contact EPR Nexuss if you need a revised quotation."
+                                      : "Commercial terms are locked once you accept."}
                               </p>
                             </div>
                             <div className="flex flex-wrap gap-2">
@@ -2088,13 +2473,21 @@ function BuyerDashboard({ onNavigate }) {
                                   size="sm"
                                   onClick={async () => {
                                     try {
-                                      const response = await api.post(`/requests/${request._id}/offer/accept`);
+                                      const response = await api.post(
+                                        `/requests/${request._id}/offer/accept`,
+                                      );
                                       await fetchBuyerData();
                                       if (response.data?.deal?._id) {
-                                        openDealRoom(response.data.deal, "overview");
+                                        openDealRoom(
+                                          response.data.deal,
+                                          "overview",
+                                        );
                                       }
                                     } catch (error) {
-                                      toast.error(error.response?.data?.message || "Unable to accept this quotation.");
+                                      toast.error(
+                                        error.response?.data?.message ||
+                                          "Unable to accept this quotation.",
+                                      );
                                     }
                                   }}
                                 >
@@ -2102,11 +2495,20 @@ function BuyerDashboard({ onNavigate }) {
                                 </Button>
                               )}
                               {accepted && linkedDeal && (
-                                <Button size="sm" onClick={() => setActive("deals")}>
+                                <Button
+                                  size="sm"
+                                  onClick={() =>
+                                    openDealRoom(linkedDeal, "overview")
+                                  }
+                                >
                                   Open Deal Room →
                                 </Button>
                               )}
-                              <Button size="sm" variant="outline" onClick={() => setActive("messages")}>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setActive("messages")}
+                              >
                                 Open messages
                               </Button>
                             </div>
@@ -2148,7 +2550,7 @@ function BuyerDashboard({ onNavigate }) {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => onNavigate("marketplace")}
+                onClick={() => onNavigate("epr-credits")}
               >
                 Browse Marketplace
               </Button>
@@ -2193,12 +2595,13 @@ function BuyerDashboard({ onNavigate }) {
                 <h3 className="text-base font-semibold text-slate-900">
                   Your watchlist is empty
                 </h3>
-              <p className="mt-1 max-w-md text-sm leading-6 text-[#667085]">
-  Save credits from the marketplace when you find listings you want to compare later.
-</p>
+                <p className="mt-1 max-w-md text-sm leading-6 text-[#667085]">
+                  Save credits from the marketplace when you find listings you
+                  want to compare later.
+                </p>
                 <Button
                   className="mt-5"
-                  onClick={() => onNavigate("marketplace")}
+                  onClick={() => onNavigate("epr-credits")}
                 >
                   Find credits
                 </Button>
@@ -2386,6 +2789,17 @@ function BuyerDashboard({ onNavigate }) {
 
         {active === "profile" && <ProfileSection onNavigate={onNavigate} />}
       </DashboardShell>
+
+      {openDealId && openDeal && (
+        <DealRoom
+          deal={openDeal}
+          role="buyer"
+          initialTab={openDealTab}
+          controlledOpen={true}
+          onClose={closeDealRoom}
+          onTabChange={updateDealRoomTab}
+        />
+      )}
     </>
   );
 }

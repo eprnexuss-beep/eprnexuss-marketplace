@@ -26,6 +26,20 @@ const offerHistorySchema = new mongoose.Schema(
       min: 0,
     },
 
+    // Internal commercial fields. These are never exposed to buyer/seller APIs.
+    sellerPricePerUnit: { type: Number, default: null, min: 0 },
+    sellerSubtotal: { type: Number, default: null, min: 0 },
+    marginRate: { type: Number, default: 10, min: 0, max: 100 },
+    marginType: {
+      type: String,
+      enum: ["percentage", "value"],
+      default: "percentage",
+    },
+    marginValue: { type: Number, default: 10, min: 0 },
+    marginAmount: { type: Number, default: 0, min: 0 },
+    buyerPricePerUnit: { type: Number, default: null, min: 0 },
+    buyerSubtotal: { type: Number, default: null, min: 0 },
+
     finalAmount: {
       type: Number,
       required: true,
@@ -185,6 +199,20 @@ const purchaseRequestSchema = new mongoose.Schema(
         min: 0,
       },
 
+      // Internal-only seller economics. Never serialize these to buyer/seller clients.
+      sellerPricePerUnit: { type: Number, default: null, min: 0 },
+      sellerSubtotal: { type: Number, default: null, min: 0 },
+      marginRate: { type: Number, default: 10, min: 0, max: 100 },
+      marginType: {
+        type: String,
+        enum: ["percentage", "value"],
+        default: "percentage",
+      },
+      marginValue: { type: Number, default: 10, min: 0 },
+      marginAmount: { type: Number, default: 0, min: 0 },
+      buyerPricePerUnit: { type: Number, default: null, min: 0 },
+      buyerSubtotal: { type: Number, default: null, min: 0 },
+
       finalAmount: {
         type: Number,
         default: null,
@@ -285,6 +313,19 @@ const purchaseRequestSchema = new mongoose.Schema(
         default: null,
         min: 0,
       },
+
+      sellerPricePerUnit: { type: Number, default: null, min: 0 },
+      sellerSubtotal: { type: Number, default: null, min: 0 },
+      marginRate: { type: Number, default: 10, min: 0, max: 100 },
+      marginType: {
+        type: String,
+        enum: ["percentage", "value"],
+        default: "percentage",
+      },
+      marginValue: { type: Number, default: 10, min: 0 },
+      marginAmount: { type: Number, default: 0, min: 0 },
+      buyerPricePerUnit: { type: Number, default: null, min: 0 },
+      buyerSubtotal: { type: Number, default: null, min: 0 },
 
       finalAmount: {
         type: Number,

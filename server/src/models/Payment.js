@@ -87,6 +87,18 @@ const paymentSchema = new mongoose.Schema(
       ref: "User",
       default: null,
     },
+
+    // Internal settlement record. Never exposed to buyer/seller.
+    sellerPayoutAmount: { type: Number, default: 0, min: 0 },
+    platformMarginAmount: { type: Number, default: 0, min: 0 },
+    sellerPayoutStatus: {
+      type: String,
+      enum: ["pending", "paid"],
+      default: "pending",
+      index: true,
+    },
+    sellerPayoutReference: { type: String, trim: true, maxlength: 160, default: "" },
+    sellerPaidAt: { type: Date, default: null },
   },
   { timestamps: true },
 );

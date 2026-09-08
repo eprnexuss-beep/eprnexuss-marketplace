@@ -459,7 +459,7 @@ function HomePage({ onNavigate }) {
           <button
             type="button"
             className="group self-start rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-[#9bd6a0] hover:text-[#3fa64a] md:self-auto"
-            onClick={() => onNavigate("marketplace")}
+            onClick={() => onNavigate("epr-credits")}
           >
             View full marketplace{" "}
             <span className="ml-1 transition-transform group-hover:translate-x-1">

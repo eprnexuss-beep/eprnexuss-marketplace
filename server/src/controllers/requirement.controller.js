@@ -4,6 +4,30 @@ import SellerListing from "../models/SellerListing.js";
 import { createActivityLog } from "../services/activityLog.service.js";
 import { notifyMatchesForRequirement } from "../services/matching.service.js";
 
+const publicPrice = (listing) => {
+  const base = Number(listing?.price || 0);
+  const marginType = listing?.publicMarginType;
+  const marginValue = Number(listing?.publicMarginValue);
+
+  if (
+    marginType === "value" &&
+    Number.isFinite(marginValue) &&
+    marginValue >= 0
+  ) {
+    return Math.round((base + marginValue) * 100) / 100;
+  }
+
+  const rate = Number.isFinite(Number(listing?.publicMarkupRate))
+    ? Number(listing.publicMarkupRate)
+    : marginType === "percentage" && Number.isFinite(marginValue)
+      ? marginValue
+      : 10;
+
+  return Math.round(
+    base * (1 + Math.max(0, rate) / 100) * 100,
+  ) / 100;
+};
+
 const categoryMap = {
   plastic: "Plastic",
   battery: "Battery",
@@ -154,7 +178,7 @@ export const getAdminRequirements = async (req, res) => {
       .populate({
         path: "matchedListings.listingId",
         select:
-          "sellerId category totalQuantity quantity reservedQuantity price location complianceYear validTill status",
+          "sellerId category totalQuantity quantity reservedQuantity price publicMarkupRate publicMarginType publicMarginValue location complianceYear validTill status",
         populate: {
           path: "sellerId",
           select: "name company email verifiedBadge",
@@ -252,7 +276,7 @@ export const matchRequirement = async (req, res) => {
       });
     }
 
-    const listingPrice = Number(listing.price);
+    const listingPrice = publicPrice(listing);
     const buyerBudget = Number(requirement.budget);
 
     if (

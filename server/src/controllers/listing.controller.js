@@ -23,6 +23,37 @@ const categoryMap = {
   tyre: "Tyre",
 };
 
+const DEFAULT_PUBLIC_MARKUP_RATE = 10;
+const publicPrice = (listing) => {
+  const base = Number(listing?.price || 0);
+  const marginType = listing?.publicMarginType;
+  const marginValue = Number(listing?.publicMarginValue);
+
+  if (
+    marginType === "value" &&
+    Number.isFinite(marginValue) &&
+    marginValue >= 0
+  ) {
+    return Math.round((base + marginValue) * 100) / 100;
+  }
+
+  const rate = Number.isFinite(Number(listing?.publicMarkupRate))
+    ? Number(listing.publicMarkupRate)
+    : marginType === "percentage" && Number.isFinite(marginValue)
+      ? marginValue
+      : DEFAULT_PUBLIC_MARKUP_RATE;
+
+  return Math.round(
+    base * (1 + Math.max(0, rate) / 100) * 100,
+  ) / 100;
+};
+
+const sanitizeSellerListing = (listing) => {
+  const value = listing?.toObject ? listing.toObject() : { ...(listing || {}) };
+  const { publicMarkupRate: _rate, publicMarginType: _marginType, publicMarginValue: _marginValue, ...safe } = value;
+  return safe;
+};
+
 /*
 
 Create seller listing
@@ -311,6 +342,10 @@ const listing =
     price:
       parsedPrice,
 
+    publicMarkupRate: DEFAULT_PUBLIC_MARKUP_RATE,
+    publicMarginType: "percentage",
+    publicMarginValue: DEFAULT_PUBLIC_MARKUP_RATE,
+
     location:
       location.trim(),
 
@@ -335,7 +370,7 @@ return res.status(201).json({
   success: true,
   message:
     "Listing submitted successfully for verification",
-  listing,
+  listing: sanitizeSellerListing(listing),
 });
 
 } catch (error) {
@@ -423,6 +458,8 @@ listingId,
 const {
   status,
   rejectionReason,
+  marginType = "percentage",
+  marginValue = 10,
 } = req.body || {};
 
 if (
@@ -435,6 +472,33 @@ if (
     message:
       "Status must be active or rejected",
   });
+}
+
+if (status === "active") {
+  if (!["percentage", "value"].includes(marginType)) {
+    return res.status(400).json({
+      success: false,
+      message: "Margin type must be percentage or value",
+      code: "INVALID_MARGIN_TYPE",
+    });
+  }
+
+  const parsedMarginValue = Number(marginValue);
+
+  if (
+    !Number.isFinite(parsedMarginValue) ||
+    parsedMarginValue < 0 ||
+    (marginType === "percentage" && parsedMarginValue > 100)
+  ) {
+    return res.status(400).json({
+      success: false,
+      message:
+        marginType === "percentage"
+          ? "Percentage margin must be between 0% and 100%"
+          : "Value margin must be zero or greater",
+      code: "INVALID_MARGIN_VALUE",
+    });
+  }
 }
 
 if (
@@ -582,6 +646,19 @@ listing.approvedBy =
 listing.approvedAt =
   new Date();
 
+if (status === "active") {
+  const parsedMarginValue = Number(marginValue);
+  listing.publicMarginType = marginType;
+  listing.publicMarginValue = parsedMarginValue;
+  // Keep the legacy rate field synchronized for existing consumers.
+  listing.publicMarkupRate =
+    marginType === "percentage"
+      ? parsedMarginValue
+      : Number(listing.price) > 0
+        ? (parsedMarginValue / Number(listing.price)) * 100
+        : 0;
+}
+
 await listing.save();
 
 /*
@@ -641,6 +718,14 @@ await createActivityLog({
     price: listing.price,
     location: listing.location,
     complianceYear: listing.complianceYear,
+    marginType:
+      status === "active" ? listing.publicMarginType : undefined,
+    marginValue:
+      status === "active" ? listing.publicMarginValue : undefined,
+    publicPrice:
+      status === "active"
+        ? publicPrice(listing)
+        : undefined,
   },
 });
 
@@ -747,6 +832,10 @@ const filter = {
   },
 };
 
+if (req.user?.role === "seller") {
+  filter.sellerId = { $ne: req.user._id };
+}
+
 if (category) {
   filter.category = category;
 }
@@ -798,13 +887,20 @@ switch (sort) {
     break;
 }
 
-const listings =
-  await query;
+const listings = await query;
+const publicListings = listings.map((listing) => {
+  const value = listing.toObject ? listing.toObject() : listing;
+  const { price: _internalPrice, publicMarkupRate: _rate, publicMarginType: _marginType, publicMarginValue: _marginValue, ...safe } = value;
+  return {
+    ...safe,
+    price: publicPrice(value),
+  };
+});
 
 return res.status(200).json({
   success: true,
-  count: listings.length,
-  listings,
+  count: publicListings.length,
+  listings: publicListings,
 });
 
 } catch (error) {
@@ -855,6 +951,8 @@ const listing =
   await SellerListing.findOne({
     _id: listingId,
 
+    ...(req.user?.role === "seller" ? { sellerId: { $ne: req.user._id } } : {}),
+
     status: "active",
 
     quantity: {
@@ -882,9 +980,11 @@ if (!listing) {
   });
 }
 
+const value = listing.toObject ? listing.toObject() : listing;
+const { price: _internalPrice, publicMarkupRate: _rate, publicMarginType: _marginType, publicMarginValue: _marginValue, ...safe } = value;
 return res.status(200).json({
   success: true,
-  listing,
+  listing: { ...safe, price: publicPrice(value) },
 });
 
 } catch (error) {
@@ -944,8 +1044,12 @@ export const getSellerListings = async (req, res) => {
         0
       );
 
+      const value = listing.toObject();
+      delete value.publicMarkupRate;
+      delete value.publicMarginType;
+      delete value.publicMarginValue;
       return {
-        ...listing.toObject(),
+        ...value,
         totalQuantity,
         reservedQuantity,
         availableQuantity,
@@ -1177,7 +1281,7 @@ export const updateSellerListing = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Listing updated successfully",
-      listing,
+      listing: sanitizeSellerListing(listing),
     });
   } catch (error) {
     console.error("Update seller listing error:", error);
@@ -1302,7 +1406,7 @@ export const updateSellerListingStatus = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: `Listing ${status} successfully`,
-      listing,
+      listing: sanitizeSellerListing(listing),
     });
   } catch (error) {
     console.error("Update seller listing status error:", error);

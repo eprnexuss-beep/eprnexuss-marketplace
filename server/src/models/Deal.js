@@ -115,6 +115,20 @@ const dealSchema = new mongoose.Schema(
       min: 0,
     },
 
+    // Seller-side unit price is the internal source of truth.
+    sellerPricePerUnit: { type: Number, default: null, min: 0 },
+    buyerPricePerUnit: { type: Number, default: null, min: 0 },
+    marginRate: { type: Number, default: 10, min: 0, max: 100 },
+    marginType: {
+      type: String,
+      enum: ["percentage", "value"],
+      default: "percentage",
+    },
+    marginValue: { type: Number, default: 10, min: 0 },
+    marginAmount: { type: Number, default: 0, min: 0 },
+    sellerSubtotal: { type: Number, default: 0, min: 0 },
+    buyerSubtotal: { type: Number, default: 0, min: 0 },
+
     // Backward compatibility only. The current business model uses a
     // manually entered fixed commissionAmount, not a percentage.
     commissionRate: {

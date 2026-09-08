@@ -36,6 +36,95 @@ const getDealForUser = async (dealId, user) => {
 const getDealTotal = (deal) =>
   Number(deal?.commercialTerms?.finalAmount ?? deal?.finalAmount ?? 0);
 
+const sanitizePaymentForBuyer = (payment) => {
+  if (!payment) return null;
+  const value = typeof payment.toObject === "function" ? payment.toObject() : { ...payment };
+  return {
+    _id: value._id,
+    dealId: value.dealId,
+    amount: value.amount,
+    currency: value.currency,
+    method: value.method,
+    status: value.status,
+    reference: value.reference,
+    notes: value.notes,
+    proofFileName: value.proofFileName,
+    proofSubmittedAt: value.proofSubmittedAt,
+    initiatedAt: value.initiatedAt,
+    receivedAt: value.receivedAt,
+  };
+};
+
+const sanitizeBuyerDeal = (deal) => {
+  const value = typeof deal?.toObject === "function" ? deal.toObject() : { ...(deal || {}) };
+  const quantity = Number(value.quantity || 0);
+  const buyerPricePerUnit = Number(
+    value.buyerPricePerUnit ??
+      (quantity > 0 ? Number(value.finalAmount || 0) / quantity : 0),
+  );
+  const buyerSubtotal = Number(value.buyerSubtotal ?? value.finalAmount ?? 0);
+
+  return {
+    _id: value._id,
+    requestId: value.requestId || null,
+    listing: value.listingId
+      ? {
+          _id: value.listingId._id,
+          category: value.listingId.category,
+          quantity: value.listingId.quantity,
+          totalQuantity: value.listingId.totalQuantity ?? value.listingId.quantity,
+          reservedQuantity: value.listingId.reservedQuantity || 0,
+          availableQuantity: Math.max(
+            0,
+            Number(value.listingId.quantity || 0) -
+              Number(value.listingId.reservedQuantity || 0),
+          ),
+          price: Math.round(buyerPricePerUnit * 100) / 100,
+          location: value.listingId.location,
+          complianceYear: value.listingId.complianceYear,
+          validTill: value.listingId.validTill,
+        }
+      : null,
+    quantity,
+    agreedPrice: Math.round(buyerPricePerUnit * 100) / 100,
+    creditSubtotal: Math.round(buyerSubtotal * 100) / 100,
+    finalAmount: Number(value.finalAmount || buyerSubtotal),
+    status: value.status,
+    paymentStatus: value.paymentStatus,
+    inventoryReserved: Boolean(value.inventoryReserved),
+    notes: value.notes || "",
+    createdAt: value.createdAt,
+    completedAt: value.completedAt || null,
+  };
+};
+
+const sanitizeInvoiceForBuyer = (invoice) => {
+  if (!invoice) return null;
+  const value = typeof invoice.toObject === "function" ? invoice.toObject() : { ...invoice };
+  const total = Number(value.total || 0);
+  const quantity = Number(value.items?.[0]?.quantity || 0);
+  const buyerUnitPrice = quantity > 0 ? Math.round((total / quantity) * 100) / 100 : 0;
+  const {
+    serviceFee: _serviceFee,
+    sellerId: _sellerId,
+    ...safeInvoice
+  } = value;
+
+  return {
+    ...safeInvoice,
+    sellerId: { company: "Verified Seller" },
+    subtotal: total,
+    total,
+    items: (value.items || []).map((item) => ({
+      description: `${item.description || "EPR credit purchase"}`.replace(/\s*[—-]\s*EPR credit purchase/i, " — EPR credit purchase"),
+      quantity: item.quantity,
+      unitPrice: buyerUnitPrice,
+      amount: Math.round(Number(item.quantity || 0) * buyerUnitPrice * 100) / 100,
+    })),
+    notes: "Payment record for your EPR Nexus purchase.",
+  };
+};
+
 const buildInvoiceNumber = () => {
   const year = new Date().getFullYear();
   return `EPR-INV-${year}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
@@ -150,8 +239,8 @@ export const getPaymentForDeal = async (req, res) => {
 
     return res.json({
       success: true,
-      payment,
-      invoice,
+      payment: req.user.role === "admin" ? payment : sanitizePaymentForBuyer(payment),
+      invoice: req.user.role === "admin" ? invoice : sanitizeInvoiceForBuyer(invoice),
       amount: getDealTotal(adminDeal),
       currency: adminDeal.commercialTerms?.currency || "INR",
     });
@@ -222,6 +311,9 @@ export const initiatePayment = async (req, res) => {
             proofSubmittedAt: now,
             initiatedAt: now,
             failedAt: null,
+            sellerPayoutAmount: Number(deal.sellerSubtotal ?? deal.creditSubtotal ?? 0),
+            platformMarginAmount: Number(deal.marginAmount ?? deal.commissionAmount ?? 0),
+            sellerPayoutStatus: "pending",
           },
           $setOnInsert: { dealId: deal._id },
         },
@@ -231,7 +323,7 @@ export const initiatePayment = async (req, res) => {
       if (error?.code === 11000) {
         payment = await Payment.findOneAndUpdate(
           { dealId: deal._id },
-          { $set: { amount, method, status: "initiated", reference: String(reference || "").trim(), notes: String(notes || "").trim(), proofFileName: req.file.originalname || req.file.filename, proofFileUrl: `/uploads/documents/${req.file.filename}`, proofMimeType: req.file.mimetype || "", proofFileSize: Number(req.file.size || 0), proofSubmittedAt: now, initiatedAt: now, failedAt: null } },
+          { $set: { amount, method, status: "initiated", reference: String(reference || "").trim(), notes: String(notes || "").trim(), proofFileName: req.file.originalname || req.file.filename, proofFileUrl: `/uploads/documents/${req.file.filename}`, proofMimeType: req.file.mimetype || "", proofFileSize: Number(req.file.size || 0), proofSubmittedAt: now, initiatedAt: now, failedAt: null, sellerPayoutAmount: Number(deal.sellerSubtotal ?? deal.creditSubtotal ?? 0), platformMarginAmount: Number(deal.marginAmount ?? deal.commissionAmount ?? 0) } },
           { new: true },
         );
       } else throw error;
@@ -253,17 +345,6 @@ export const initiatePayment = async (req, res) => {
       metadata: { amount, method, reference: payment.reference },
     });
 
-    await createNotifications({
-      recipients: [deal.sellerId],
-      actor: req.user._id,
-      type: "payment_initiated",
-      title: "Payment initiated",
-      message: `Payment has been initiated for your EPR credit deal (${deal.quantity} MT). EPR Nexus will confirm receipt after verification.`,
-      entityType: "deal",
-      entityId: deal._id,
-      metadata: { amount, method },
-    });
-
     const admins = await User.find({ role: "admin", isActive: true }).select("_id").lean();
     if (admins.length) {
       await createNotifications({
@@ -278,7 +359,13 @@ export const initiatePayment = async (req, res) => {
       });
     }
 
-    return res.status(200).json({ success: true, message: "Payment proof submitted", payment, invoice, deal });
+    return res.status(200).json({
+      success: true,
+      message: "Payment proof submitted",
+      payment: sanitizePaymentForBuyer(payment),
+      invoice: sanitizeInvoiceForBuyer(invoice),
+      deal: sanitizeBuyerDeal(deal),
+    });
   } catch (error) {
     console.error("Initiate payment error:", error);
     return res.status(500).json({ success: false, message: "Failed to initiate payment", code: "PAYMENT_INITIATION_FAILED" });
@@ -321,6 +408,67 @@ export const downloadPaymentProof = async (req, res) => {
   } catch (error) {
     console.error("Download payment proof error:", error);
     return res.status(500).json({ success: false, message: "Failed to load payment proof" });
+  }
+};
+
+export const getAdminPayments = async (req, res) => {
+  try {
+    const payments = await Payment.find()
+      .populate({
+        path: "dealId",
+        populate: [
+          { path: "buyerId", select: "name company email phone" },
+          { path: "sellerId", select: "name company email phone" },
+          { path: "listingId", select: "category location complianceYear" },
+        ],
+      })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const normalized = payments.map((payment) => {
+      const deal = payment.dealId || {};
+      return {
+        ...payment,
+        sellerPayoutAmount: Number(payment.sellerPayoutAmount || deal.sellerSubtotal || deal.creditSubtotal || 0),
+        platformMarginAmount: Number(payment.platformMarginAmount || deal.marginAmount || deal.commissionAmount || 0),
+      };
+    });
+
+    return res.json({ success: true, count: normalized.length, payments: normalized });
+  } catch (error) {
+    console.error("Get admin payments error:", error);
+    return res.status(500).json({ success: false, message: "Failed to fetch payment records" });
+  }
+};
+
+export const updateSellerPayout = async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const { status = "paid", reference = "" } = req.body || {};
+    if (!mongoose.Types.ObjectId.isValid(paymentId)) return res.status(400).json({ success: false, message: "A valid paymentId is required" });
+    if (!["pending", "paid"].includes(status)) return res.status(400).json({ success: false, message: "Invalid seller payout status" });
+
+    const payment = await Payment.findById(paymentId);
+    if (!payment) return res.status(404).json({ success: false, message: "Payment not found" });
+    if (status === "paid" && payment.status !== "received") return res.status(409).json({ success: false, message: "Seller payout can only be marked after buyer payment is received" });
+
+    payment.sellerPayoutStatus = status;
+    payment.sellerPayoutReference = String(reference || "").trim();
+    payment.sellerPaidAt = status === "paid" ? new Date() : null;
+    await payment.save();
+
+    await createActivityLog({
+      actorId: req.user._id,
+      action: "seller_payout_status_changed",
+      entityType: "payment",
+      entityId: payment._id,
+      metadata: { status, reference: payment.sellerPayoutReference, sellerPayoutAmount: payment.sellerPayoutAmount, platformMarginAmount: payment.platformMarginAmount },
+    });
+
+    return res.json({ success: true, message: `Seller payout marked ${status}`, payment });
+  } catch (error) {
+    console.error("Update seller payout error:", error);
+    return res.status(500).json({ success: false, message: "Failed to update seller payout" });
   }
 };
 
@@ -376,7 +524,7 @@ export const updatePaymentStatus = async (req, res) => {
     });
 
     await createNotifications({
-      recipients: [deal.buyerId, deal.sellerId],
+      recipients: [deal.buyerId],
       actor: req.user._id,
       type: status === "received" ? "payment_received" : "deal_status_changed",
       title: status === "received" ? "Payment received" : `Payment ${status}`,

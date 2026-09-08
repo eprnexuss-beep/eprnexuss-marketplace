@@ -18,11 +18,32 @@ export const getWatchlist = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
+    const publicPrice = (listing) => {
+  const base = Number(listing?.price || 0);
+  const marginType = listing?.publicMarginType;
+  const marginValue = Number(listing?.publicMarginValue);
+
+  if (marginType === "value" && Number.isFinite(marginValue) && marginValue >= 0) {
+    return Math.round((base + marginValue) * 100) / 100;
+  }
+
+  const rate = Number.isFinite(Number(listing?.publicMarkupRate))
+    ? Number(listing.publicMarkupRate)
+    : marginType === "percentage" && Number.isFinite(marginValue)
+      ? marginValue
+      : 10;
+
+  return Math.round(base * (1 + Math.max(0, rate) / 100) * 100) / 100;
+};
+
     const listings = items
       .map((item) => {
         if (!item.listingId) return null;
+        const { price: _internalPrice, publicMarkupRate: _rate, publicMarginType: _marginType, publicMarginValue: _marginValue, ...safe } =
+          item.listingId;
         return {
-          ...item.listingId,
+          ...safe,
+          price: publicPrice(item.listingId),
           watchlistId: item._id,
           savedAt: item.createdAt,
         };

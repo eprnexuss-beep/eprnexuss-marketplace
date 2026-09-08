@@ -40,6 +40,30 @@ const sellerListingSchema = new mongoose.Schema(
       min: [0, "Price cannot be negative"],
     },
 
+    // Internal platform markup used only for the public marketplace price.
+    // Sellers always see the original `price`; buyers see the marked-up price.
+    publicMarkupRate: {
+      type: Number,
+      default: 10,
+      min: 0,
+      max: 100,
+    },
+
+    // Internal listing-publication margin selected by admin at approval time.
+    // "percentage" adds a percentage of the seller price per MT.
+    // "value" adds a fixed INR amount per MT.
+    publicMarginType: {
+      type: String,
+      enum: ["percentage", "value"],
+      default: "percentage",
+    },
+
+    publicMarginValue: {
+      type: Number,
+      default: 10,
+      min: 0,
+    },
+
     location: {
       type: String,
       required: [true, "Location is required"],

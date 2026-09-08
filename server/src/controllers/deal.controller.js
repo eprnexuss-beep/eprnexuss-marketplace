@@ -7,6 +7,30 @@ import PurchaseRequest from "../models/PurchaseRequest.js";
 import { notifyDealStatusChange } from "../services/notification.service.js";
 import { createActivityLog } from "../services/activityLog.service.js";
 
+const publicListingPrice = (listing) => {
+  const base = Number(listing?.price || 0);
+  const marginType = listing?.publicMarginType;
+  const marginValue = Number(listing?.publicMarginValue);
+
+  if (
+    marginType === "value" &&
+    Number.isFinite(marginValue) &&
+    marginValue >= 0
+  ) {
+    return Math.round((base + marginValue) * 100) / 100;
+  }
+
+  const rate = Number.isFinite(Number(listing?.publicMarkupRate))
+    ? Number(listing.publicMarkupRate)
+    : marginType === "percentage" && Number.isFinite(marginValue)
+      ? marginValue
+      : 10;
+
+  return Math.round(
+    base * (1 + Math.max(0, rate) / 100) * 100,
+  ) / 100;
+};
+
 /*
 
 CREATE MULTIPLE DEALS FROM A FULLY MATCHED REQUIREMENT
@@ -51,7 +75,7 @@ Inventory is RESERVED when the deals are created.
 
 export const createDealsFromRequirement = async (req, res) => {
 try {
-const { requirementId, commissionAmount: requestedCommissionAmount = 0 } = req.body || {};
+const { requirementId, marginRate: requestedMarginRate = 10 } = req.body || {};
 
 /*
 |--------------------------------------------------------------------------
@@ -117,13 +141,15 @@ if (
 |--------------------------------------------------------------------------
 */
 
-const fixedCommission = Number(requestedCommissionAmount);
-
-if (!Number.isFinite(fixedCommission) || fixedCommission < 0) {
+const requestedMargin = Number(requestedMarginRate);
+if (
+  requestedMarginRate !== undefined &&
+  (!Number.isFinite(requestedMargin) || requestedMargin < 0 || requestedMargin > 100)
+) {
   return res.status(400).json({
     success: false,
-    message: "Commission amount must be a valid non-negative number",
-    code: "INVALID_COMMISSION_AMOUNT",
+    message: "Platform margin must be between 0% and 100%",
+    code: "INVALID_MARGIN_RATE",
   });
 }
 
@@ -259,17 +285,53 @@ for (const match of requirement.matchedListings) {
   |--------------------------------------------------------------------------
   */
 
-  const totalValue = matchedQuantity * agreedPrice;
+  const marginType =
+    requestedMarginRate !== undefined
+      ? "percentage"
+      : listing.publicMarginType === "value"
+        ? "value"
+        : "percentage";
+  const marginValue =
+    requestedMarginRate !== undefined
+      ? requestedMargin
+      : Number(
+          listing.publicMarginValue ??
+            listing.publicMarkupRate ??
+            10,
+        );
 
-  /*
-  |--------------------------------------------------------------------------
-  | Calculate commission
-  |--------------------------------------------------------------------------
-  */
+  if (
+    !Number.isFinite(marginValue) ||
+    marginValue < 0 ||
+    (marginType === "percentage" && marginValue > 100)
+  ) {
+    return res.status(400).json({
+      success: false,
+      message:
+        marginType === "percentage"
+          ? "Percentage margin must be between 0% and 100%"
+          : "Value margin must be zero or greater",
+      code: "INVALID_MARGIN_VALUE",
+    });
+  }
 
-  const commissionAmount = Math.round(fixedCommission * 100) / 100;
-  const creditSubtotal = Math.round(totalValue * 100) / 100;
-  const finalAmount = Math.round((creditSubtotal + commissionAmount) * 100) / 100;
+  const sellerSubtotal = Math.round(matchedQuantity * agreedPrice * 100) / 100;
+  const marginAmount =
+    marginType === "value"
+      ? Math.round(matchedQuantity * marginValue * 100) / 100
+      : Math.round(sellerSubtotal * (marginValue / 100) * 100) / 100;
+  const buyerPricePerUnit =
+    marginType === "value"
+      ? Math.round((agreedPrice + marginValue) * 100) / 100
+      : Math.round(agreedPrice * (1 + marginValue / 100) * 100) / 100;
+  const buyerSubtotal = Math.round(matchedQuantity * buyerPricePerUnit * 100) / 100;
+  const finalAmount = buyerSubtotal;
+  const marginRate =
+    marginType === "percentage"
+      ? marginValue
+      : agreedPrice > 0
+        ? (marginValue / agreedPrice) * 100
+        : 0;
 
   /*
   |--------------------------------------------------------------------------
@@ -294,13 +356,18 @@ for (const match of requirement.matchedListings) {
       quantity: matchedQuantity,
 
       agreedPrice,
-
-      // Kept for backward compatibility. Commission is a fixed amount.
-      commissionRate: 0,
-
-      commissionAmount,
-      creditSubtotal,
-      serviceFee: commissionAmount,
+      sellerPricePerUnit: agreedPrice,
+      buyerPricePerUnit,
+      marginRate,
+      marginType,
+      marginValue,
+      marginAmount,
+      commissionRate: marginRate,
+      commissionAmount: marginAmount,
+      serviceFee: marginAmount,
+      sellerSubtotal,
+      buyerSubtotal,
+      creditSubtotal: sellerSubtotal,
       finalAmount,
 
       /*
@@ -709,7 +776,7 @@ const deals = await Deal.find()
 .populate("sellerId", "name company email")
 .populate(
 "listingId",
-"category quantity totalQuantity price location complianceYear validTill reservedQuantity",
+"category quantity totalQuantity price publicMarkupRate publicMarginType publicMarginValue location complianceYear validTill reservedQuantity",
 )
 .populate("requestId", "quantity status notes createdAt")
 .populate(
@@ -1321,21 +1388,12 @@ const sellerDeals = deals.map((deal) => ({
 
   quantity: deal.quantity,
 
-  agreedPrice: deal.agreedPrice,
+  // Sellers only see their own negotiated/selling economics.
+  agreedPrice: deal.sellerPricePerUnit ?? deal.agreedPrice,
 
-  commissionRate: deal.commissionRate,
-
-  commissionAmount: deal.commissionAmount,
-
-  serviceFee: deal.serviceFee,
-
-  creditSubtotal: deal.creditSubtotal,
-
-  finalAmount: deal.finalAmount,
+  sellerSubtotal: deal.sellerSubtotal ?? deal.creditSubtotal ?? Number(deal.quantity || 0) * Number(deal.agreedPrice || 0),
 
   status: deal.status,
-
-  paymentStatus: deal.status === "completed" ? "received" : deal.paymentStatus,
 
   inventoryReserved: Boolean(deal.inventoryReserved),
 
@@ -1421,7 +1479,7 @@ const buyerDeals = deals.map((deal) => ({
             Number(deal.listingId.reservedQuantity || 0),
         ),
 
-        price: deal.listingId.price,
+        price: publicListingPrice(deal.listingId),
 
         location: deal.listingId.location,
 
@@ -1433,15 +1491,10 @@ const buyerDeals = deals.map((deal) => ({
 
   quantity: deal.quantity,
 
-  agreedPrice: deal.agreedPrice,
+  // Buyer sees only the all-in price, never the internal seller price or margin.
+  agreedPrice: deal.buyerPricePerUnit ?? (Number(deal.quantity || 0) > 0 ? Number(deal.finalAmount || 0) / Number(deal.quantity || 1) : deal.agreedPrice),
 
-  commissionRate: deal.commissionRate,
-
-  commissionAmount: deal.commissionAmount,
-
-  serviceFee: deal.serviceFee,
-
-  creditSubtotal: deal.creditSubtotal,
+  creditSubtotal: deal.buyerSubtotal ?? deal.finalAmount,
 
   finalAmount: deal.finalAmount,
 

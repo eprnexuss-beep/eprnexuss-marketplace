@@ -4,5 +4,5 @@ import { authorize } from "../middleware/role.middleware.js";
 import { getInvoiceForDeal } from "../controllers/invoice.controller.js";
 
 const router = express.Router();
-router.get("/deal/:dealId", protect, authorize("buyer", "seller", "admin"), getInvoiceForDeal);
+router.get("/deal/:dealId", protect, authorize("buyer", "admin"), getInvoiceForDeal);
 export default router;

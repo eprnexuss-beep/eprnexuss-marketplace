@@ -95,65 +95,74 @@ export const notifyDealStatusChange = async ({
   paymentStatus = null,
   actor = null,
 }) => {
-  const category =
-    deal?.listingId?.category ||
-    deal?.category ||
-    "EPR credit";
-
+  const category = deal?.listingId?.category || deal?.category || "EPR credit";
   const quantity = Number(deal?.quantity || 0);
   const quantityText = `${quantity} MT`;
+  const notifications = [];
 
-  const recipients = [
-    deal?.buyerId,
-    deal?.sellerId,
-  ].filter(Boolean);
+  const buyerId = deal?.buyerId;
+  const sellerId = deal?.sellerId;
 
-  if (!recipients.length) {
-    return [];
+  // Buyer receives transaction/payment updates. No internal margin or seller economics.
+  if (buyerId) {
+    let type = "deal_status_changed";
+    let title = "Deal status updated";
+    let message = `${category} deal (${quantityText}) is now ${String(status).replaceAll("_", " ")}.`;
+
+    if (status === "payment_coordination") {
+      type = "payment_initiated";
+      title = "Payment coordination started";
+      message = `Payment coordination has started for your ${category} deal (${quantityText}).`;
+    }
+    if (paymentStatus === "received") {
+      type = "payment_received";
+      title = "Payment received";
+      message = `Your payment has been verified by EPR Nexuss for the ${category} deal (${quantityText}).`;
+    }
+    if (status === "completed") {
+      type = "deal_completed";
+      title = "Deal completed";
+      message = `Your ${category} deal for ${quantityText} has been completed successfully.`;
+    }
+    if (status === "cancelled") {
+      type = "deal_cancelled";
+      title = "Deal cancelled";
+      message = `Your ${category} deal for ${quantityText} was cancelled. Any active inventory reservation has been released.`;
+    }
+
+    notifications.push(await createNotification({
+      recipient: buyerId, actor, type, title, message, entityType: "deal", entityId: deal?._id || null,
+      metadata: { status, paymentStatus: status === "completed" ? "received" : paymentStatus, quantity, category },
+    }));
   }
 
-  let type = "deal_status_changed";
-  let title = "Deal status updated";
-  let message = `${category} deal (${quantityText}) is now ${String(status).replaceAll("_", " ")}.`;
+  // Seller only receives operational deal-state updates. Never expose payment state.
+  if (sellerId) {
+    let type = "deal_status_changed";
+    let title = "Deal status updated";
+    let message = `EPR Nexuss updated your ${category} transaction (${quantityText}).`;
+    if (status === "matched" || status === "negotiating") {
+      title = "Buyer request received";
+      message = `A buyer request for ${quantityText} from your ${category} listing is being coordinated by EPR Nexuss.`;
+    } else if (status === "terms_agreed" || status === "payment_coordination") {
+      title = "Deal in progress";
+      message = `Your ${category} deal for ${quantityText} is in progress. EPR Nexuss is coordinating the transaction.`;
+    } else if (status === "completed") {
+      type = "deal_completed";
+      title = "Deal completed";
+      message = `Your ${category} deal for ${quantityText} has been completed successfully.`;
+    } else if (status === "cancelled") {
+      type = "deal_cancelled";
+      title = "Deal cancelled";
+      message = `Your ${category} deal for ${quantityText} was cancelled. Any active inventory reservation has been released.`;
+    }
 
-  if (status === "payment_coordination") {
-    type = "payment_initiated";
-    title = "Payment coordination started";
-    message = `Payment coordination has started for your ${category} deal (${quantityText}).`;
+    notifications.push(await createNotification({
+      recipient: sellerId, actor, type, title, message, entityType: "deal", entityId: deal?._id || null,
+      metadata: { status, quantity, category },
+    }));
   }
 
-  if (paymentStatus === "received") {
-    type = "payment_received";
-    title = "Payment received";
-    message = `Payment has been marked as received for your ${category} deal (${quantityText}).`;
-  }
-
-  if (status === "completed") {
-    type = "deal_completed";
-    title = "Deal completed";
-    message = `Your ${category} deal for ${quantityText} has been completed successfully.`;
-  }
-
-  if (status === "cancelled") {
-    type = "deal_cancelled";
-    title = "Deal cancelled";
-    message = `Your ${category} deal for ${quantityText} was cancelled. Any active inventory reservation has been released.`;
-  }
-
-  return createNotifications({
-    recipients,
-    actor,
-    type,
-    title,
-    message,
-    entityType: "deal",
-    entityId: deal?._id || null,
-    metadata: {
-      status,
-      paymentStatus,
-      quantity,
-      category,
-      agreedPrice: Number(deal?.agreedPrice || 0),
-    },
-  });
+  return notifications.flat().filter(Boolean);
 };
+

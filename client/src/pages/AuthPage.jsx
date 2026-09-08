@@ -6,12 +6,25 @@ import { useAuth } from "../context/AuthContext.jsx";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
+// Google Identity Services should be initialized only once per page. React
+// StrictMode can run effects twice in development, which otherwise triggers
+// the GSI "initialize() is called multiple times" warning.
+let googleInitialized = false;
+let googleCredentialHandler = null;
+
 function GoogleButton({ onCredential, disabled }) {
   const containerRef = useRef(null);
   const handlerRef = useRef(onCredential);
 
   useEffect(() => {
     handlerRef.current = onCredential;
+    googleCredentialHandler = onCredential;
+
+    return () => {
+      if (googleCredentialHandler === onCredential) {
+        googleCredentialHandler = null;
+      }
+    };
   }, [onCredential]);
 
   useEffect(() => {
@@ -26,10 +39,14 @@ function GoogleButton({ onCredential, disabled }) {
 
       containerRef.current.innerHTML = "";
 
-      window.google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: (response) => handlerRef.current?.(response.credential),
-      });
+      if (!googleInitialized) {
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: (response) =>
+            googleCredentialHandler?.(response.credential),
+        });
+        googleInitialized = true;
+      }
 
       window.google.accounts.id.renderButton(containerRef.current, {
         theme: "outline",
@@ -170,7 +187,7 @@ function AuthPage({ onNavigate, initialMode = "login" }) {
     }
 
     if (form.password.length < 6) {
-      setError("Password must be at least 6 characters long.");
+      setError("Password must be at least 8 characters long.");
       return;
     }
 
@@ -377,7 +394,7 @@ function AuthPage({ onNavigate, initialMode = "login" }) {
             <Input
               label="Password *"
               type="password"
-              placeholder="At least 6 characters"
+              placeholder="At least 8 characters"
               value={form.password}
               onChange={(event) =>
                 setForm((current) => ({

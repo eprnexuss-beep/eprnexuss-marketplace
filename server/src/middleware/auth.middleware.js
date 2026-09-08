@@ -80,3 +80,21 @@ export const protect = async (req, res, next) => {
     });
   }
 };
+
+// Optional authentication for public catalogue endpoints. A valid Bearer token
+// enriches req.user; anonymous visitors continue normally.
+export const optionalProtect = async (req, res, next) => {
+  try {
+    const authorization = req.headers.authorization;
+    if (!authorization || !authorization.startsWith("Bearer ")) return next();
+    const token = authorization.slice(7).trim();
+    if (!token || !JWT_SECRET) return next();
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (!decoded?.userId) return next();
+    const user = await User.findById(decoded.userId).select("-password");
+    if (user && user.isActive !== false) req.user = user;
+    return next();
+  } catch {
+    return next();
+  }
+};

@@ -1,6 +1,6 @@
 import express from "express";
 
-import { protect } from "../middleware/auth.middleware.js";
+import { protect, optionalProtect } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/role.middleware.js";
 import { requireVerifiedSeller } from "../middleware/verifiedUser.middleware.js";
 import { uploadDocument } from "../middleware/upload.middleware.js";
@@ -17,7 +17,7 @@ import {
 const router = express.Router();
 
 // Marketplace reads are intentionally public.
-router.get("/", getActiveListings);
+router.get("/", optionalProtect, getActiveListings);
 
 // IMPORTANT: Keep the seller-specific route before "/:listingId".
 // Otherwise Express treats "seller" as a listingId and calls
@@ -31,7 +31,7 @@ router.get(
   getSellerListings,
 );
 
-router.get("/:listingId", getListingById);
+router.get("/:listingId", optionalProtect, getListingById);
 
 router.post(
   "/",

@@ -13,6 +13,32 @@ import { CLIENT_URL } from "../config/env.js";
 
 const roundMoney = (value) => Math.round(Number(value) * 100) / 100;
 
+// Buyer-facing listing price. Sellers keep seeing the internal base price.
+// The admin-selected publication margin is stored on the listing and can be
+// either a percentage or a fixed INR value per unit.
+const DEFAULT_PUBLIC_MARKUP_RATE = 10;
+const publicPrice = (listing) => {
+  const base = Number(listing?.price || 0);
+  const marginType = listing?.publicMarginType;
+  const marginValue = Number(listing?.publicMarginValue);
+
+  if (
+    marginType === "value" &&
+    Number.isFinite(marginValue) &&
+    marginValue >= 0
+  ) {
+    return roundMoney(base + marginValue);
+  }
+
+  const rate = Number.isFinite(Number(listing?.publicMarkupRate))
+    ? Number(listing.publicMarkupRate)
+    : marginType === "percentage" && Number.isFinite(marginValue)
+      ? marginValue
+      : DEFAULT_PUBLIC_MARKUP_RATE;
+
+  return roundMoney(base * (1 + Math.max(0, rate) / 100));
+};
+
 const parsePositiveNumber = (value) => {
   const number = Number(value);
   return Number.isFinite(number) && number > 0 ? number : null;
@@ -25,29 +51,76 @@ const parseNonNegativeNumber = (value) => {
 
 const buildOffer = ({
   quantity,
-  creditPricePerUnit,
-  serviceFee,
-  version,
+  sellerPricePerUnit,
+  marginType = "percentage",
+  marginValue = 10,
+  // Legacy percentage field is retained for older clients/data.
+  marginRate = 10,
   note = "",
+  version,
   issuedBy,
   expiresAt = null,
   sentAt = new Date(),
 }) => {
-  const price = parsePositiveNumber(creditPricePerUnit);
-  const commission = parseNonNegativeNumber(serviceFee);
+  const sellerPrice = parsePositiveNumber(sellerPricePerUnit);
   const qty = parsePositiveNumber(quantity);
+  const normalizedType = marginType === "value" ? "value" : "percentage";
+  const rawMarginValue = Number(marginValue);
+  const fallbackRate = Number(marginRate);
+  const effectiveMarginValue = Number.isFinite(rawMarginValue) && rawMarginValue >= 0
+    ? rawMarginValue
+    : Number.isFinite(fallbackRate) && fallbackRate >= 0
+      ? fallbackRate
+      : 0;
 
-  if (!qty || price === null || commission === null) return null;
+  if (
+    !qty ||
+    sellerPrice === null ||
+    !Number.isFinite(effectiveMarginValue) ||
+    effectiveMarginValue < 0 ||
+    (normalizedType === "percentage" && effectiveMarginValue > 100)
+  ) {
+    return null;
+  }
 
-  const creditSubtotal = roundMoney(qty * price);
-  const finalAmount = roundMoney(creditSubtotal + commission);
+  const sellerSubtotal = roundMoney(qty * sellerPrice);
+  const marginAmount =
+    normalizedType === "value"
+      ? roundMoney(qty * effectiveMarginValue)
+      : roundMoney(sellerSubtotal * (effectiveMarginValue / 100));
+
+  const buyerPricePerUnit =
+    normalizedType === "value"
+      ? roundMoney(sellerPrice + effectiveMarginValue)
+      : roundMoney(sellerPrice * (1 + effectiveMarginValue / 100));
+
+  const buyerSubtotal = roundMoney(qty * buyerPricePerUnit);
+
+  // Keep marginRate populated for backward compatibility. For fixed margins,
+  // store the equivalent percentage for legacy consumers while marginType and
+  // marginValue remain the authoritative quotation fields.
+  const equivalentMarginRate =
+    sellerPrice > 0
+      ? roundMoney((effectiveMarginValue / sellerPrice) * 100)
+      : 0;
 
   return {
     version,
-    creditPricePerUnit: roundMoney(price),
-    creditSubtotal,
-    serviceFee: roundMoney(commission),
-    finalAmount,
+    creditPricePerUnit: buyerPricePerUnit,
+    creditSubtotal: buyerSubtotal,
+    serviceFee: marginAmount,
+    sellerPricePerUnit: roundMoney(sellerPrice),
+    sellerSubtotal,
+    marginRate:
+      normalizedType === "percentage"
+        ? roundMoney(effectiveMarginValue)
+        : equivalentMarginRate,
+    marginType: normalizedType,
+    marginValue: roundMoney(effectiveMarginValue),
+    marginAmount,
+    buyerPricePerUnit,
+    buyerSubtotal,
+    finalAmount: buyerSubtotal,
     currency: "INR",
     sentAt,
     expiresAt,
@@ -189,7 +262,7 @@ export const getAdminPurchaseRequests = async (req, res) => {
       .populate({
         path: "listingId",
         select:
-          "category quantity totalQuantity price location complianceYear validTill reservedQuantity sellerId",
+          "category quantity totalQuantity price publicMarkupRate publicMarginType publicMarginValue location complianceYear validTill reservedQuantity sellerId",
         populate: {
           path: "sellerId",
           select: "name company email phone",
@@ -245,6 +318,11 @@ export const issuePurchaseRequestOffer = async (req, res) => {
   try {
     const { requestId } = req.params;
     const {
+      sellerPricePerUnit,
+      marginType = "percentage",
+      marginValue,
+      marginRate = 10,
+      // Legacy fields are accepted only for older admin clients.
       creditPricePerUnit,
       serviceFee,
       commissionAmount,
@@ -268,6 +346,17 @@ export const issuePurchaseRequestOffer = async (req, res) => {
       });
     }
 
+    const listingForQuotation = await SellerListing.findById(request.listingId)
+      .select("price publicMarkupRate publicMarginType publicMarginValue")
+      .lean();
+
+    if (!listingForQuotation) {
+      return res.status(404).json({
+        success: false,
+        message: "Listing associated with this request was not found",
+      });
+    }
+
     const existingDeal = await Deal.findOne({ requestId: request._id }).select("_id status quotationVersion").lean();
 
     if (existingDeal) {
@@ -287,24 +376,51 @@ export const issuePurchaseRequestOffer = async (req, res) => {
       });
     }
 
-    const price = parsePositiveNumber(creditPricePerUnit);
-    const commissionInput =
-      serviceFee !== undefined ? serviceFee : commissionAmount;
-    const commission = parseNonNegativeNumber(commissionInput);
+    const sellerPriceInput =
+      sellerPricePerUnit !== undefined ? sellerPricePerUnit : creditPricePerUnit;
+    const sellerPrice = parsePositiveNumber(sellerPriceInput);
+    const listingMarginType =
+      listingForQuotation.publicMarginType === "value"
+        ? "value"
+        : "percentage";
+    const listingMarginValue = Number(
+      listingForQuotation.publicMarginValue ??
+        listingForQuotation.publicMarkupRate ??
+        10,
+    );
+    const normalizedMarginType =
+      marginValue === undefined && marginRate === 10 && marginType === "percentage"
+        ? listingMarginType
+        : marginType === "value"
+          ? "value"
+          : "percentage";
+    const suppliedMarginValue =
+      marginValue !== undefined
+        ? marginValue
+        : marginRate !== 10 || normalizedMarginType !== listingMarginType
+          ? marginRate
+          : listingMarginValue;
+    const parsedMarginValue = parseNonNegativeNumber(suppliedMarginValue);
 
-    if (price === null) {
+    if (sellerPrice === null) {
       return res.status(400).json({
         success: false,
-        message: "Credit price must be a valid positive number",
-        code: "INVALID_CREDIT_PRICE",
+        message: "Seller credit price must be a valid positive number",
+        code: "INVALID_SELLER_CREDIT_PRICE",
       });
     }
 
-    if (commission === null) {
+    if (
+      parsedMarginValue === null ||
+      (normalizedMarginType === "percentage" && parsedMarginValue > 100)
+    ) {
       return res.status(400).json({
         success: false,
-        message: "EPR Nexus commission must be a valid non-negative amount",
-        code: "INVALID_COMMISSION_AMOUNT",
+        message:
+          normalizedMarginType === "percentage"
+            ? "Percentage margin must be between 0% and 100%"
+            : "Value margin must be zero or greater",
+        code: "INVALID_MARGIN_VALUE",
       });
     }
 
@@ -349,8 +465,15 @@ export const issuePurchaseRequestOffer = async (req, res) => {
 
     const offer = buildOffer({
       quantity: request.quantity,
-      creditPricePerUnit: price,
-      serviceFee: commission,
+      sellerPricePerUnit: sellerPrice,
+      marginType: normalizedMarginType,
+      marginValue: parsedMarginValue,
+      marginRate:
+        normalizedMarginType === "percentage"
+          ? parsedMarginValue
+          : sellerPrice > 0
+            ? (parsedMarginValue / sellerPrice) * 100
+            : 0,
       version: nextVersion,
       note,
       issuedBy: req.user._id,
@@ -365,6 +488,14 @@ export const issuePurchaseRequestOffer = async (req, res) => {
       creditPricePerUnit: offer.creditPricePerUnit,
       creditSubtotal: offer.creditSubtotal,
       serviceFee: offer.serviceFee,
+      sellerPricePerUnit: offer.sellerPricePerUnit,
+      sellerSubtotal: offer.sellerSubtotal,
+      marginRate: offer.marginRate,
+      marginType: offer.marginType,
+      marginValue: offer.marginValue,
+      marginAmount: offer.marginAmount,
+      buyerPricePerUnit: offer.buyerPricePerUnit,
+      buyerSubtotal: offer.buyerSubtotal,
       finalAmount: offer.finalAmount,
       currency: offer.currency,
       sentAt: offer.sentAt,
@@ -542,10 +673,65 @@ export const acceptPurchaseRequestOffer = async (req, res) => {
     }
 
     const quantity = parsePositiveNumber(request.quantity);
-    const agreedPrice = parsePositiveNumber(offer.creditPricePerUnit);
-    const commissionAmount = parseNonNegativeNumber(offer.serviceFee);
+    const agreedPrice = parsePositiveNumber(
+      offer.sellerPricePerUnit ?? offer.creditPricePerUnit,
+    );
 
-    if (!quantity || agreedPrice === null || commissionAmount === null) {
+    const normalizedMarginType =
+      offer.marginType === "value" ? "value" : "percentage";
+    const storedMarginValue = Number(
+      offer.marginValue ??
+        offer.marginRate ??
+        0,
+    );
+    const legacyMarginRate =
+      offer.marginType == null &&
+      offer.sellerPricePerUnit == null &&
+      offer.buyerPricePerUnit == null &&
+      Number(offer.creditPricePerUnit || 0) > 0
+        ? (Number(offer.serviceFee || 0) /
+            (Number(offer.creditPricePerUnit) * quantity)) *
+          100
+        : null;
+
+    const effectiveMarginValue =
+      legacyMarginRate != null ? legacyMarginRate : storedMarginValue;
+
+    if (
+      !quantity ||
+      agreedPrice === null ||
+      !Number.isFinite(effectiveMarginValue) ||
+      effectiveMarginValue < 0 ||
+      (normalizedMarginType === "percentage" && effectiveMarginValue > 100)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "The quotation contains invalid commercial terms",
+        code: "INVALID_QUOTATION_TERMS",
+      });
+    }
+
+    const marginRate =
+      normalizedMarginType === "percentage"
+        ? effectiveMarginValue
+        : agreedPrice > 0
+          ? (effectiveMarginValue / agreedPrice) * 100
+          : 0;
+
+    const calculatedMarginAmount =
+      normalizedMarginType === "value"
+        ? roundMoney(quantity * effectiveMarginValue)
+        : roundMoney(
+            quantity *
+              agreedPrice *
+              (effectiveMarginValue / 100),
+          );
+
+    const commissionAmount = parseNonNegativeNumber(
+      offer.marginAmount ?? offer.serviceFee ?? calculatedMarginAmount,
+    );
+
+    if (commissionAmount === null) {
       return res.status(400).json({
         success: false,
         message: "The quotation contains invalid commercial terms",
@@ -584,8 +770,16 @@ export const acceptPurchaseRequestOffer = async (req, res) => {
       });
     }
 
-    const creditSubtotal = roundMoney(quantity * agreedPrice);
-    const finalAmount = roundMoney(creditSubtotal + commissionAmount);
+    const sellerSubtotal = roundMoney(quantity * agreedPrice);
+    const marginAmount = roundMoney(commissionAmount);
+    const buyerPricePerUnit = roundMoney(
+      offer.buyerPricePerUnit ??
+        (normalizedMarginType === "value"
+          ? agreedPrice + effectiveMarginValue
+          : agreedPrice * (1 + effectiveMarginValue / 100)),
+    );
+    const buyerSubtotal = roundMoney(quantity * buyerPricePerUnit);
+    const finalAmount = roundMoney(offer.finalAmount ?? buyerSubtotal);
     const acceptedAt = new Date();
 
     const historyItem = request.offerHistory.find(
@@ -602,16 +796,24 @@ export const acceptPurchaseRequestOffer = async (req, res) => {
         sellerId: listing.sellerId,
         quantity,
         agreedPrice,
-        commissionRate: 0,
-        commissionAmount,
-        serviceFee: commissionAmount,
-        creditSubtotal,
+        sellerPricePerUnit: agreedPrice,
+        buyerPricePerUnit,
+        marginRate: Number(marginRate || 0),
+        marginType: normalizedMarginType,
+        marginValue: roundMoney(effectiveMarginValue),
+        marginAmount,
+        commissionRate: Number(marginRate || 0),
+        commissionAmount: marginAmount,
+        serviceFee: marginAmount,
+        sellerSubtotal,
+        buyerSubtotal,
+        creditSubtotal: sellerSubtotal,
         finalAmount,
         commercialTerms: {
           quantity,
           agreedPrice,
-          creditSubtotal,
-          commissionAmount,
+          creditSubtotal: sellerSubtotal,
+          commissionAmount: marginAmount,
           finalAmount,
           currency: "INR",
           quotationVersion: offer.version,
@@ -636,9 +838,17 @@ export const acceptPurchaseRequestOffer = async (req, res) => {
 
       request.acceptedOfferVersion = offer.version;
       request.acceptedOfferSnapshot = {
-        creditPricePerUnit: agreedPrice,
-        creditSubtotal,
-        serviceFee: commissionAmount,
+        creditPricePerUnit: buyerPricePerUnit,
+        creditSubtotal: buyerSubtotal,
+        serviceFee: marginAmount,
+        sellerPricePerUnit: agreedPrice,
+        sellerSubtotal,
+        marginRate: Number(marginRate || 0),
+        marginType: normalizedMarginType,
+        marginValue: roundMoney(effectiveMarginValue),
+        marginAmount,
+        buyerPricePerUnit,
+        buyerSubtotal,
         finalAmount,
         currency: "INR",
         version: offer.version,
@@ -664,8 +874,11 @@ export const acceptPurchaseRequestOffer = async (req, res) => {
         metadata: {
           quantity,
           agreedPrice,
-          creditSubtotal,
-          commissionAmount,
+          sellerSubtotal,
+          buyerPricePerUnit,
+          buyerSubtotal,
+          marginRate,
+          marginAmount,
           finalAmount,
         },
       });
@@ -677,11 +890,74 @@ export const acceptPurchaseRequestOffer = async (req, res) => {
         actor: req.user._id,
       });
 
+      const buyerDeal = {
+        _id: deal._id,
+        requestId: deal.requestId,
+        listing: {
+          _id: listing._id,
+          category: listing.category,
+          quantity: listing.quantity,
+          totalQuantity: listing.totalQuantity ?? listing.quantity,
+          reservedQuantity: listing.reservedQuantity || 0,
+          availableQuantity: Math.max(
+            0,
+            Number(listing.quantity || 0) -
+              Number(listing.reservedQuantity || 0),
+          ),
+          price: roundMoney(buyerPricePerUnit),
+          location: listing.location,
+          complianceYear: listing.complianceYear,
+          validTill: listing.validTill,
+        },
+        quantity: deal.quantity,
+        agreedPrice: roundMoney(buyerPricePerUnit),
+        creditSubtotal: roundMoney(buyerSubtotal),
+        finalAmount: roundMoney(finalAmount),
+        status: deal.status,
+        paymentStatus: deal.paymentStatus,
+        inventoryReserved: Boolean(deal.inventoryReserved),
+        notes: deal.notes || "",
+        createdAt: deal.createdAt,
+        completedAt: deal.completedAt || null,
+      };
+
       return res.status(200).json({
         success: true,
         message: `Quotation #${offer.version} accepted. Deal moved to payment coordination.`,
-        request,
-        deal,
+        request: {
+          _id: request._id,
+          listing: {
+            _id: listing._id,
+            category: listing.category,
+            quantity: listing.quantity,
+            totalQuantity: listing.totalQuantity ?? listing.quantity,
+            reservedQuantity: listing.reservedQuantity || 0,
+            price: roundMoney(buyerPricePerUnit),
+            location: listing.location,
+            complianceYear: listing.complianceYear,
+            validTill: listing.validTill,
+          },
+          requestedQuantity: request.quantity,
+          companyName: request.companyName,
+          contactPerson: request.contactPerson,
+          notes: request.notes || "",
+          status: request.status,
+          rejectionReason: request.rejectionReason || "",
+          offer: {
+            version: offer.version,
+            creditPricePerUnit: roundMoney(buyerPricePerUnit),
+            creditSubtotal: roundMoney(buyerSubtotal),
+            finalAmount: roundMoney(finalAmount),
+            currency: offer.currency || "INR",
+            sentAt: offer.sentAt,
+            acceptedAt: offer.acceptedAt,
+            expiresAt: offer.expiresAt,
+            note: offer.note || "",
+            status: offer.status,
+          },
+          acceptedOfferVersion: request.acceptedOfferVersion || null,
+        },
+        deal: buyerDeal,
       });
     } catch (error) {
       await SellerListing.updateOne(
@@ -877,8 +1153,6 @@ export const getSellerPurchaseRequests = async (req, res) => {
         status: request.status,
         createdAt: request.createdAt,
         rejectionReason: request.rejectionReason || "",
-        offer: request.offer || null,
-        offerHistory: request.offerHistory || [],
       }));
 
     return res.status(200).json({
@@ -903,7 +1177,7 @@ export const getBuyerPurchaseRequests = async (req, res) => {
       .populate({
         path: "listingId",
         select:
-          "category quantity totalQuantity price location complianceYear validTill reservedQuantity",
+          "category quantity totalQuantity price publicMarkupRate publicMarginType publicMarginValue location complianceYear validTill reservedQuantity",
       })
       .sort({ createdAt: -1 })
       .lean();
@@ -918,7 +1192,7 @@ export const getBuyerPurchaseRequests = async (req, res) => {
             totalQuantity:
               request.listingId.totalQuantity ?? request.listingId.quantity,
             reservedQuantity: request.listingId.reservedQuantity || 0,
-            price: request.listingId.price,
+            price: publicPrice(request.listingId),
             location: request.listingId.location,
             complianceYear: request.listingId.complianceYear,
             validTill: request.listingId.validTill,
@@ -930,10 +1204,43 @@ export const getBuyerPurchaseRequests = async (req, res) => {
       notes: request.notes || "",
       status: request.status,
       rejectionReason: request.rejectionReason || "",
-      offer: request.offer || null,
-      offerHistory: request.offerHistory || [],
+      offer: request.offer
+        ? {
+            version: request.offer.version,
+            creditPricePerUnit: request.offer.buyerPricePerUnit ?? (Number(request.quantity || 0) > 0 ? Number(request.offer.finalAmount || 0) / Number(request.quantity || 1) : request.offer.creditPricePerUnit),
+            creditSubtotal: request.offer.buyerSubtotal ?? request.offer.finalAmount,
+            finalAmount: request.offer.finalAmount,
+            currency: request.offer.currency || "INR",
+            sentAt: request.offer.sentAt,
+            acceptedAt: request.offer.acceptedAt,
+            expiresAt: request.offer.expiresAt,
+            note: request.offer.note || "",
+            status: request.offer.status,
+          }
+        : null,
+      offerHistory: (request.offerHistory || []).map((item) => ({
+        version: item.version,
+        creditPricePerUnit: item.buyerPricePerUnit ?? (Number(request.quantity || 0) > 0 ? Number(item.finalAmount || 0) / Number(request.quantity || 1) : item.creditPricePerUnit),
+        creditSubtotal: item.buyerSubtotal ?? item.finalAmount,
+        finalAmount: item.finalAmount,
+        currency: item.currency || "INR",
+        sentAt: item.sentAt,
+        acceptedAt: item.acceptedAt,
+        expiresAt: item.expiresAt,
+        note: item.note || "",
+        status: item.status,
+      })),
       acceptedOfferVersion: request.acceptedOfferVersion || null,
-      acceptedOfferSnapshot: request.acceptedOfferSnapshot || null,
+      acceptedOfferSnapshot: request.acceptedOfferSnapshot
+        ? {
+            creditPricePerUnit: request.acceptedOfferSnapshot.buyerPricePerUnit ?? (Number(request.quantity || 0) > 0 ? Number(request.acceptedOfferSnapshot.finalAmount || 0) / Number(request.quantity || 1) : request.acceptedOfferSnapshot.creditPricePerUnit),
+            creditSubtotal: request.acceptedOfferSnapshot.buyerSubtotal ?? request.acceptedOfferSnapshot.finalAmount,
+            finalAmount: request.acceptedOfferSnapshot.finalAmount,
+            currency: request.acceptedOfferSnapshot.currency || "INR",
+            version: request.acceptedOfferSnapshot.version,
+            acceptedAt: request.acceptedOfferSnapshot.acceptedAt,
+          }
+        : null,
       createdAt: request.createdAt,
     }));
 

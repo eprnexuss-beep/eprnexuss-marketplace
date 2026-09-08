@@ -52,6 +52,27 @@ const privateRole = (request, user) => {
   return null;
 };
 
+const publicPrice = (value) => {
+  const price = Number(value || 0);
+  return Math.round(price * 1.1 * 100) / 100;
+};
+
+const buyerOffer = (offer, quantity = 0) => {
+  if (!offer) return null;
+  return {
+    version: offer.version,
+    creditPricePerUnit: offer.buyerPricePerUnit ?? (Number(quantity || 0) > 0 ? Number(offer.finalAmount || 0) / Number(quantity) : offer.creditPricePerUnit),
+    creditSubtotal: offer.buyerSubtotal ?? offer.finalAmount,
+    finalAmount: offer.finalAmount,
+    currency: offer.currency || "INR",
+    sentAt: offer.sentAt,
+    acceptedAt: offer.acceptedAt,
+    expiresAt: offer.expiresAt,
+    note: offer.note || "",
+    status: offer.status,
+  };
+};
+
 const safeRequest = (request, role) => ({
   _id: request._id,
   status: request.status,
@@ -65,14 +86,19 @@ const safeRequest = (request, role) => ({
         location: request.listingId.location,
         complianceYear: request.listingId.complianceYear,
         validTill: request.listingId.validTill,
-        listingPricePerUnit: request.listingId.price,
+        listingPricePerUnit: role === "buyer"
+          ? publicPrice(request.listingId.price)
+          : request.listingId.price,
         availableQuantity: request.listingId.quantity,
         reservedQuantity: request.listingId.reservedQuantity || 0,
       }
     : null,
 
-  offer: request.offer || null,
-  offerHistory: request.offerHistory || [],
+  // Internal seller economics are intentionally omitted from both participant views.
+  offer: role === "buyer" ? buyerOffer(request.offer, request.quantity) : null,
+  offerHistory: role === "buyer"
+    ? (request.offerHistory || []).map((item) => buyerOffer(item, request.quantity))
+    : [],
   perspective: role,
 });
 
@@ -174,11 +200,14 @@ const createDealFromAcceptedOffer = async (request) => {
   const quantity = requestedQuantity;
 
   const agreedPrice = Number(
-    request.offer?.creditPricePerUnit,
+    request.offer?.sellerPricePerUnit ?? request.offer?.creditPricePerUnit,
   );
 
-  const serviceFee = Number(
-    request.offer?.serviceFee,
+  const marginAmount = Number(request.offer?.marginAmount ?? request.offer?.serviceFee ?? 0);
+  const marginRate = Number(
+    request.offer?.sellerPricePerUnit == null && request.offer?.buyerPricePerUnit == null && agreedPrice > 0 && quantity > 0
+      ? (marginAmount / (agreedPrice * quantity)) * 100
+      : request.offer?.marginRate ?? 0,
   );
 
   /*
@@ -205,7 +234,7 @@ const createDealFromAcceptedOffer = async (request) => {
     );
   }
 
-  if (!Number.isFinite(serviceFee) || serviceFee < 0) {
+  if (!Number.isFinite(marginAmount) || marginAmount < 0) {
     await SellerListing.updateOne(
       {
         _id: listing._id,
@@ -221,15 +250,17 @@ const createDealFromAcceptedOffer = async (request) => {
     );
 
     throw new Error(
-      "The accepted quotation has an invalid service fee.",
+      "The accepted quotation has invalid platform margin terms.",
     );
   }
 
-  const creditSubtotal =
-    quantity * agreedPrice;
-
-  const finalAmount =
-    creditSubtotal + serviceFee;
+  const sellerSubtotal = quantity * agreedPrice;
+  const buyerPricePerUnit = Number(
+    request.offer?.buyerPricePerUnit ??
+      agreedPrice * (1 + marginRate / 100),
+  );
+  const buyerSubtotal = quantity * buyerPricePerUnit;
+  const finalAmount = Number(request.offer?.finalAmount ?? buyerSubtotal);
 
   /*
    * Create the deal only after the inventory reservation succeeded.
@@ -251,19 +282,16 @@ const createDealFromAcceptedOffer = async (request) => {
       quantity,
 
       agreedPrice,
-
-      /*
-       * EPR Nexus currently uses a manually entered fixed
-       * service fee instead of a percentage commission here.
-       */
-      commissionRate: 0,
-
-      commissionAmount: serviceFee,
-
-      serviceFee,
-
-      creditSubtotal,
-
+      sellerPricePerUnit: agreedPrice,
+      buyerPricePerUnit,
+      marginRate,
+      marginAmount,
+      commissionRate: marginRate,
+      commissionAmount: marginAmount,
+      serviceFee: marginAmount,
+      sellerSubtotal,
+      buyerSubtotal,
+      creditSubtotal: sellerSubtotal,
       finalAmount,
 
       status: "payment_coordination",

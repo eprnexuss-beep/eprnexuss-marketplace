@@ -86,6 +86,7 @@ const NAV = [
     badge: 0,
   },
   { id: "deals", label: "Deals / Transactions" },
+  { id: "payments", label: "Payment Records" },
   { id: "disputes", label: "Disputes" },
   { id: "messages", label: "Messages" },
   { id: "reports", label: "Reports" },
@@ -183,6 +184,18 @@ function NavIcon({ id }) {
         />
       </svg>
     ),
+    payments: (
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={1.5}
+      >
+        <rect x="3" y="6" width="18" height="13" rx="2" />
+        <path d="M3 10h18M7 15h3" />
+      </svg>
+    ),
     messages: (
       <svg
         className="w-4 h-4"
@@ -245,7 +258,9 @@ function getCertificateVerification(listing) {
   const categoryMatches =
     !document.certificateCategory ||
     document.certificateCategory.trim().toLowerCase() ===
-      String(listing.category || "").trim().toLowerCase();
+      String(listing.category || "")
+        .trim()
+        .toLowerCase();
   const yearMatches =
     !document.certificateComplianceYear ||
     document.certificateComplianceYear.trim() ===
@@ -265,7 +280,12 @@ function getCertificateVerification(listing) {
 
   return {
     hasData: true,
-    complete: metadataComplete && categoryMatches && yearMatches && quantityCovers && validityCovers,
+    complete:
+      metadataComplete &&
+      categoryMatches &&
+      yearMatches &&
+      quantityCovers &&
+      validityCovers,
     checks: [
       ["Certificate ID", Boolean(document.certificateNumber?.trim())],
       ["Category", categoryMatches],
@@ -465,7 +485,9 @@ function VerificationQueue({ kycDocuments, kycLoading, kycError, reviewKyc }) {
 
                   <button
                     type="button"
-                    onClick={() => downloadDocument(selected._id, selected.fileName)}
+                    onClick={() =>
+                      downloadDocument(selected._id, selected.fileName)
+                    }
                     className="text-xs text-[#5AC361] hover:underline"
                   >
                     Open document
@@ -560,10 +582,179 @@ function VerificationQueue({ kycDocuments, kycLoading, kycError, reviewKyc }) {
   );
 }
 
+function ListingApprovalMarginModal({ prompt, onCancel, onConfirm }) {
+  const listing = prompt?.listing;
+  const [marginType, setMarginType] = useState(prompt?.marginType || "percentage");
+  const [marginValue, setMarginValue] = useState(
+    String(prompt?.marginValue ?? "10"),
+  );
+  const numericMargin = Number(marginValue);
+  const sellerPrice = Number(listing?.price || 0);
+  const publicPrice =
+    marginType === "value"
+      ? sellerPrice + (Number.isFinite(numericMargin) ? numericMargin : 0)
+      : sellerPrice *
+        (1 + (Number.isFinite(numericMargin) ? numericMargin : 0) / 100);
+  const valid =
+    Number.isFinite(numericMargin) &&
+    numericMargin >= 0 &&
+    (marginType === "value" || numericMargin <= 100);
+
+  return (
+    <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/45 p-4">
+      <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div className="flex items-start justify-between border-b border-[#E5EAF0] px-6 py-5">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#5AC361]">
+              Publish listing
+            </p>
+            <h3
+              className="mt-1 text-xl font-semibold text-[#0F1923]"
+              style={{ fontFamily: "Outfit, sans-serif" }}
+            >
+              Set marketplace margin
+            </h3>
+            <p className="mt-1 text-sm text-[#667085]">
+              Choose the private margin EPR Nexuss will add to the seller price
+              before this listing goes live.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-lg border border-[#E5EAF0] px-3 py-2 text-[#667085] hover:bg-[#F7F9FB]"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="space-y-5 px-6 py-6">
+          <div className="rounded-xl border border-[#E5EAF0] bg-[#F7F9FB] p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs text-[#98A2B3]">Seller listing</p>
+                <p className="font-semibold text-[#0F1923]">
+                  {listing?.category || "EPR Credit"} · {listing?.quantity || 0} MT
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-[#98A2B3]">Seller price</p>
+                <p className="text-lg font-bold text-[#0F1923]">
+                  ₹{sellerPrice.toLocaleString("en-IN")}/MT
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <p className="mb-2 text-sm font-semibold text-[#344054]">
+              Margin method
+            </p>
+            <div className="grid grid-cols-2 gap-2 rounded-xl bg-[#F2F4F7] p-1">
+              {[
+                ["percentage", "Percentage"],
+                ["value", "Fixed value / MT"],
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setMarginType(value)}
+                  className={`rounded-lg px-4 py-2.5 text-sm font-medium transition ${
+                    marginType === value
+                      ? "bg-white text-[#237A2D] shadow-sm"
+                      : "text-[#667085] hover:text-[#344054]"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-[#344054]">
+              {marginType === "percentage"
+                ? "Margin percentage"
+                : "Margin amount per MT"}
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                min="0"
+                max={marginType === "percentage" ? "100" : undefined}
+                step="0.01"
+                value={marginValue}
+                onChange={(event) => setMarginValue(event.target.value)}
+                className="w-full rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm text-[#101828] outline-none focus:border-[#5AC361] focus:ring-2 focus:ring-[#5AC361]/15"
+                autoFocus
+              />
+              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-[#667085]">
+                {marginType === "percentage" ? "%" : "₹ / MT"}
+              </span>
+            </div>
+            {!valid && (
+              <p className="mt-2 text-xs text-[#D92D20]">
+                {marginType === "percentage"
+                  ? "Enter a margin between 0% and 100%."
+                  : "Enter a zero or positive amount."}
+              </p>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-[#D1FADF] bg-[#F0FDF4] p-4">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-[#667085]">Public marketplace price</span>
+              <strong className="text-lg text-[#237A2D]">
+                ₹{Math.round(publicPrice * 100) / 100}/MT
+              </strong>
+            </div>
+            <p className="mt-1 text-xs text-[#667085]">
+              Buyers will see this price. The margin method and amount remain
+              internal to EPR Nexuss.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex gap-3 border-t border-[#E5EAF0] px-6 py-4">
+          <Button variant="outline" className="flex-1" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button
+            className="flex-1"
+            disabled={!valid}
+            onClick={() => onConfirm(marginType, numericMargin)}
+          >
+            Approve & Publish
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AdminDashboard({ onNavigate }) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const validSections = useMemo(() => new Set(["dashboard", "verification", "requests", "quotations", "listings", "deals", "disputes", "messages", "reports", "settings"]), []);
-  const initialSection = validSections.has(searchParams.get("section")) ? searchParams.get("section") : "dashboard";
+  const validSections = useMemo(
+    () =>
+      new Set([
+        "dashboard",
+        "verification",
+        "requests",
+        "quotations",
+        "listings",
+        "deals",
+        "payments",
+        "disputes",
+        "messages",
+        "reports",
+        "settings",
+      ]),
+    [],
+  );
+  const initialSection = validSections.has(searchParams.get("section"))
+    ? searchParams.get("section")
+    : "dashboard";
   const [active, setActiveState] = useState(initialSection);
 
   // URL is the single source of truth for dashboard section navigation.
@@ -599,6 +790,10 @@ function AdminDashboard({ onNavigate }) {
   const [requestError, setRequestError] = useState("");
   const [deals, setDeals] = useState([]);
   const [dealLoading, setDealLoading] = useState(true);
+  const [paymentRecords, setPaymentRecords] = useState([]);
+  const [paymentRecordsLoading, setPaymentRecordsLoading] = useState(false);
+  const [paymentRecordsError, setPaymentRecordsError] = useState("");
+  const [payoutPrompt, setPayoutPrompt] = useState(null);
   const [dealError, setDealError] = useState("");
   const [selectedRequestId, setSelectedRequestId] = useState("");
   const [messageUnreadCount, setMessageUnreadCount] = useState(0);
@@ -607,6 +802,7 @@ function AdminDashboard({ onNavigate }) {
   const [paymentProofUrl, setPaymentProofUrl] = useState("");
   const [paymentActionLoading, setPaymentActionLoading] = useState(false);
   const [rejectionPrompt, setRejectionPrompt] = useState(null);
+  const [listingApprovalPrompt, setListingApprovalPrompt] = useState(null);
 
   const fetchPurchaseRequests = async ({ silent = false } = {}) => {
     try {
@@ -648,6 +844,45 @@ function AdminDashboard({ onNavigate }) {
     }
   };
 
+  const fetchPaymentRecords = async ({ silent = false } = {}) => {
+    try {
+      if (!silent) setPaymentRecordsLoading(true);
+      setPaymentRecordsError("");
+      const response = await api.get("/payments/admin");
+      if (response.data?.success)
+        setPaymentRecords(response.data.payments || []);
+    } catch (error) {
+      console.error("Failed to fetch payment records:", error);
+      setPaymentRecordsError(
+        error.response?.data?.message || "Failed to load payment records.",
+      );
+    } finally {
+      setPaymentRecordsLoading(false);
+    }
+  };
+
+  const markSellerPayout = async (paymentId, reference = "") => {
+    try {
+      const response = await api.patch(`/payments/admin/${paymentId}/payout`, {
+        status: "paid",
+        reference,
+      });
+      if (!response.data?.success)
+        throw new Error(
+          response.data?.message || "Failed to update seller payout.",
+        );
+      await fetchPaymentRecords({ silent: true });
+      await fetchDeals({ silent: true });
+      toast.success("Seller payout marked as paid.");
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to update seller payout.",
+      );
+    }
+  };
+
   const fetchMessageUnreadCount = async () => {
     try {
       const response = await api.get("/requests/messages/unread-count");
@@ -665,8 +900,14 @@ function AdminDashboard({ onNavigate }) {
   useEffect(() => {
     const current = searchParams.get("section");
     const nextSection = validSections.has(current) ? current : "dashboard";
-    setActiveState((previous) => (previous === nextSection ? previous : nextSection));
+    setActiveState((previous) =>
+      previous === nextSection ? previous : nextSection,
+    );
   }, [searchParams, validSections]);
+
+  useEffect(() => {
+    if (active === "payments") fetchPaymentRecords();
+  }, [active]);
 
   const updateDealStatus = async (dealId, status, paymentStatus) => {
     try {
@@ -699,7 +940,9 @@ function AdminDashboard({ onNavigate }) {
       setPaymentReview({ deal, payment, invoice: response.data?.invoice });
     } catch (error) {
       console.error("Payment review load failed:", error);
-      toast.error(error.response?.data?.message || "Failed to load payment details.");
+      toast.error(
+        error.response?.data?.message || "Failed to load payment details.",
+      );
     } finally {
       setPaymentReviewLoading(false);
     }
@@ -710,12 +953,20 @@ function AdminDashboard({ onNavigate }) {
     if (!paymentId) return;
     try {
       setPaymentActionLoading(true);
-      const response = await api.get(`/payments/${paymentId}/proof`, { responseType: "blob" });
-      const url = window.URL.createObjectURL(new Blob([response.data], { type: response.headers["content-type"] || "image/*" }));
+      const response = await api.get(`/payments/${paymentId}/proof`, {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(
+        new Blob([response.data], {
+          type: response.headers["content-type"] || "image/*",
+        }),
+      );
       setPaymentProofUrl(url);
     } catch (error) {
       console.error("Payment proof load failed:", error);
-      toast.error(error.response?.data?.message || "Failed to load payment screenshot.");
+      toast.error(
+        error.response?.data?.message || "Failed to load payment screenshot.",
+      );
     } finally {
       setPaymentActionLoading(false);
     }
@@ -747,7 +998,9 @@ function AdminDashboard({ onNavigate }) {
       }
     } catch (error) {
       console.error("Payment confirmation failed:", error);
-      toast.error(error.response?.data?.message || "Failed to confirm payment.");
+      toast.error(
+        error.response?.data?.message || "Failed to confirm payment.",
+      );
     }
   };
 
@@ -816,14 +1069,27 @@ function AdminDashboard({ onNavigate }) {
     }
   };
 
-  const reviewListing = async (listingId, status, rejectionReason = "") => {
+  const reviewListing = async (
+    listingId,
+    status,
+    rejectionReason = "",
+    marginType = "percentage",
+    marginValue = 10,
+  ) => {
     try {
       const response = await api.patch(`/admin/listings/${listingId}`, {
         status,
         rejectionReason,
+        ...(status === "active"
+          ? {
+              marginType,
+              marginValue: Number(marginValue),
+            }
+          : {}),
       });
 
       if (response.data.success) {
+        setListingApprovalPrompt(null);
         await fetchListings();
       }
     } catch (error) {
@@ -848,7 +1114,9 @@ function AdminDashboard({ onNavigate }) {
     } catch (error) {
       console.error("KYC review failed:", error);
 
-      toast.error(error.response?.data?.message || "Failed to review document.");
+      toast.error(
+        error.response?.data?.message || "Failed to review document.",
+      );
 
       throw error;
     }
@@ -911,6 +1179,9 @@ function AdminDashboard({ onNavigate }) {
         quotations: purchaseRequests.filter(
           (request) =>
             request.offer?.finalAmount != null && !request.offer?.acceptedAt,
+        ).length,
+        payments: paymentRecords.filter(
+          (payment) => payment.status === "initiated",
         ).length,
         messages: messageUnreadCount,
       }}
@@ -1238,147 +1509,189 @@ function AdminDashboard({ onNavigate }) {
           ) : (
             <div className="divide-y divide-[#E5EAF0]">
               {listings.map((listing) => {
-                const certificateVerification = getCertificateVerification(listing);
+                const certificateVerification =
+                  getCertificateVerification(listing);
 
                 return (
-                <div key={listing._id} className="p-5">
-                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3
-                          className="font-semibold text-[#0F1923]"
-                          style={{
-                            fontFamily: "Outfit, sans-serif",
-                          }}
-                        >
-                          {listing.category}
-                        </h3>
+                  <div key={listing._id} className="p-5">
+                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3
+                            className="font-semibold text-[#0F1923]"
+                            style={{
+                              fontFamily: "Outfit, sans-serif",
+                            }}
+                          >
+                            {listing.category}
+                          </h3>
 
-                        <Badge label="Pending Review" />
-                      </div>
-
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-                        <div>
-                          <p className="text-xs text-[#9CA3AF]">Seller</p>
-                          <p className="font-medium text-[#374151]">
-                            {listing.sellerId?.company ||
-                              listing.sellerId?.name ||
-                              "—"}
-                          </p>
+                          <Badge label="Pending Review" />
                         </div>
 
-                        <div>
-                          <p className="text-xs text-[#9CA3AF]">Quantity</p>
-                          <p className="font-medium text-[#374151]">
-                            {listing.quantity} MT
-                          </p>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                          <div>
+                            <p className="text-xs text-[#9CA3AF]">Seller</p>
+                            <p className="font-medium text-[#374151]">
+                              {listing.sellerId?.company ||
+                                listing.sellerId?.name ||
+                                "—"}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-xs text-[#9CA3AF]">Quantity</p>
+                            <p className="font-medium text-[#374151]">
+                              {listing.quantity} MT
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-xs text-[#9CA3AF]">Price</p>
+                            <p className="font-medium text-[#374151]">
+                              ₹{listing.price}/MT
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-xs text-[#9CA3AF]">Location</p>
+                            <p className="font-medium text-[#374151]">
+                              {listing.location}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-xs text-[#9CA3AF]">
+                              Compliance Year
+                            </p>
+                            <p className="font-medium text-[#374151]">
+                              FY {listing.complianceYear}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-xs text-[#9CA3AF]">Valid Till</p>
+                            <p className="font-medium text-[#374151]">
+                              {listing.validTill
+                                ? new Date(
+                                    listing.validTill,
+                                  ).toLocaleDateString("en-IN")
+                                : "—"}
+                            </p>
+                          </div>
                         </div>
 
-                        <div>
-                          <p className="text-xs text-[#9CA3AF]">Price</p>
-                          <p className="font-medium text-[#374151]">
-                            ₹{listing.price}/MT
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-xs text-[#9CA3AF]">Location</p>
-                          <p className="font-medium text-[#374151]">
-                            {listing.location}
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-xs text-[#9CA3AF]">
-                            Compliance Year
-                          </p>
-                          <p className="font-medium text-[#374151]">
-                            FY {listing.complianceYear}
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-xs text-[#9CA3AF]">Valid Till</p>
-                          <p className="font-medium text-[#374151]">
-                            {listing.validTill
-                              ? new Date(listing.validTill).toLocaleDateString(
-                                  "en-IN",
-                                )
-                              : "—"}
-                          </p>
-                        </div>
-                      </div>
-
-                      {listing.description && (
-                        <div className="mt-4 p-3 bg-[#F7F9FB] rounded-lg">
-                          <p className="text-xs text-[#9CA3AF] mb-1">
-                            Description
-                          </p>
-                          <p className="text-sm text-[#374151]">
-                            {listing.description}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col gap-2 lg:w-72">
-                      <div className={`rounded-xl border p-3 ${certificateVerification.complete ? "bg-[#F0FDF4] border-[#BBF7D0]" : "bg-[#FFFBEB] border-[#FCD34D]"}`}>
-                        <div className="flex items-center justify-between gap-2 mb-2">
-                          <p className="text-xs font-semibold text-[#374151]">Certificate verification</p>
-                          <Badge label={certificateVerification.complete ? "Checks passed" : "Review needed"} />
-                        </div>
-                        <div className="space-y-1.5">
-                          {certificateVerification.checks.map(([label, passed]) => (
-                            <div key={label} className="flex items-center justify-between gap-3 text-xs">
-                              <span className="text-[#6B7280]">{label}</span>
-                              <span className={passed ? "text-[#2E7D32] font-semibold" : "text-[#B45309] font-semibold"}>
-                                {passed ? "✓" : "Needs review"}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                        {listing.documentId?.certificateNumber && (
-                          <p className="text-[11px] text-[#6B7280] mt-2 pt-2 border-t border-black/5">
-                            {listing.documentId.certificateNumber} · {listing.documentId.sourcePortal || "Source not set"}
-                          </p>
+                        {listing.description && (
+                          <div className="mt-4 p-3 bg-[#F7F9FB] rounded-lg">
+                            <p className="text-xs text-[#9CA3AF] mb-1">
+                              Description
+                            </p>
+                            <p className="text-sm text-[#374151]">
+                              {listing.description}
+                            </p>
+                          </div>
                         )}
                       </div>
 
-                      {listing.documentId?.fileUrl && (
-                        <button
-                          type="button"
-                          onClick={() => downloadDocument(listing.documentId._id, listing.documentId.fileName)}
-                          className="rounded-lg border border-[#E5EAF0] px-4 py-2 text-sm text-center text-[#374151] hover:bg-[#F7F9FB]"
+                      <div className="flex flex-col gap-2 lg:w-72">
+                        <div
+                          className={`rounded-xl border p-3 ${certificateVerification.complete ? "bg-[#F0FDF4] border-[#BBF7D0]" : "bg-[#FFFBEB] border-[#FCD34D]"}`}
                         >
-                          View Proof
-                        </button>
-                      )}
+                          <div className="flex items-center justify-between gap-2 mb-2">
+                            <p className="text-xs font-semibold text-[#374151]">
+                              Certificate verification
+                            </p>
+                            <Badge
+                              label={
+                                certificateVerification.complete
+                                  ? "Checks passed"
+                                  : "Review needed"
+                              }
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            {certificateVerification.checks.map(
+                              ([label, passed]) => (
+                                <div
+                                  key={label}
+                                  className="flex items-center justify-between gap-3 text-xs"
+                                >
+                                  <span className="text-[#6B7280]">
+                                    {label}
+                                  </span>
+                                  <span
+                                    className={
+                                      passed
+                                        ? "text-[#2E7D32] font-semibold"
+                                        : "text-[#B45309] font-semibold"
+                                    }
+                                  >
+                                    {passed ? "✓" : "Needs review"}
+                                  </span>
+                                </div>
+                              ),
+                            )}
+                          </div>
+                          {listing.documentId?.certificateNumber && (
+                            <p className="text-[11px] text-[#6B7280] mt-2 pt-2 border-t border-black/5">
+                              {listing.documentId.certificateNumber} ·{" "}
+                              {listing.documentId.sourcePortal ||
+                                "Source not set"}
+                            </p>
+                          )}
+                        </div>
 
-                      <Button
-                        onClick={() => reviewListing(listing._id, "active")}
-                        disabled={!certificateVerification.complete}
-                        title={!certificateVerification.complete ? "Certificate verification checks must pass before publishing" : "Approve and publish listing"}
-                      >
-                        Approve & Publish
-                      </Button>
+                        {listing.documentId?.fileUrl && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              downloadDocument(
+                                listing.documentId._id,
+                                listing.documentId.fileName,
+                              )
+                            }
+                            className="rounded-lg border border-[#E5EAF0] px-4 py-2 text-sm text-center text-[#374151] hover:bg-[#F7F9FB]"
+                          >
+                            View Proof
+                          </button>
+                        )}
 
-                      <Button
-                        variant="danger"
-                        onClick={() =>
-                          setRejectionPrompt({
-                            type: "listing",
-                            id: listing._id,
-                            title: "Reject listing",
-                            description: "Add the reason the seller should see for this rejection.",
-                            value: "",
-                          })
-                        }
-                      >
-                        Reject Listing
-                      </Button>
+                        <Button
+                          onClick={() =>
+                            setListingApprovalPrompt({
+                              listing,
+                              marginType: "percentage",
+                              marginValue: "10",
+                            })
+                          }
+                          disabled={!certificateVerification.complete}
+                          title={
+                            !certificateVerification.complete
+                              ? "Certificate verification checks must pass before publishing"
+                              : "Choose the internal marketplace margin and publish listing"
+                          }
+                        >
+                          Approve & Publish
+                        </Button>
+
+                        <Button
+                          variant="danger"
+                          onClick={() =>
+                            setRejectionPrompt({
+                              type: "listing",
+                              id: listing._id,
+                              title: "Reject listing",
+                              description:
+                                "Add the reason the seller should see for this rejection.",
+                              value: "",
+                            })
+                          }
+                        >
+                          Reject Listing
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
                 );
               })}
             </div>
@@ -1644,7 +1957,8 @@ function AdminDashboard({ onNavigate }) {
                                 type: "request",
                                 id: request._id,
                                 title: "Reject purchase request",
-                                description: "Add the reason the buyer should see for this rejection.",
+                                description:
+                                  "Add the reason the buyer should see for this rejection.",
                                 value: "",
                               })
                             }
@@ -1775,7 +2089,9 @@ function AdminDashboard({ onNavigate }) {
                       </div>
 
                       <div className="text-right">
-                        <p className="text-xs text-[#9CA3AF]">Commission</p>
+                        <p className="text-xs text-[#9CA3AF]">
+                          Platform margin
+                        </p>
                         <p className="font-bold text-[#5AC361]">
                           ₹
                           {Number(deal.commissionAmount || 0).toLocaleString(
@@ -1849,13 +2165,23 @@ function AdminDashboard({ onNavigate }) {
 
                     <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
                       <div className="text-[#6B7280]">
-                        <span>Total deal value: </span>
+                        <span>Seller settlement: </span>
                         <strong className="text-[#374151]">
                           ₹
-                          {(
-                            Number(deal.quantity || 0) *
-                            Number(deal.agreedPrice || 0)
+                          {Number(
+                            deal.sellerSubtotal ??
+                              deal.creditSubtotal ??
+                              Number(deal.quantity || 0) *
+                                Number(deal.agreedPrice || 0),
                           ).toLocaleString("en-IN")}
+                        </strong>
+                        <span className="mx-2 text-[#D1D5DB]">•</span>
+                        <span>Buyer total: </span>
+                        <strong className="text-[#374151]">
+                          ₹
+                          {Number(deal.finalAmount || 0).toLocaleString(
+                            "en-IN",
+                          )}
                         </strong>
                         <span className="mx-2 text-[#D1D5DB]">•</span>
                         <span>Payment: </span>
@@ -1894,7 +2220,9 @@ function AdminDashboard({ onNavigate }) {
                               onClick={() => openPaymentReview(deal)}
                               disabled={paymentReviewLoading}
                             >
-                              {paymentReviewLoading ? "Loading…" : "Review Payment Proof"}
+                              {paymentReviewLoading
+                                ? "Loading…"
+                                : "Review Payment Proof"}
                             </Button>
                           )}
 
@@ -2027,6 +2355,183 @@ function AdminDashboard({ onNavigate }) {
         </Card>
       )}
 
+      {active === "payments" && (
+        <div className="mb-5">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2
+                className="text-base font-semibold text-[#0F1923]"
+                style={{ fontFamily: "Outfit, sans-serif" }}
+              >
+                Payment Records
+              </h2>
+              <p className="mt-1 text-xs text-[#667085]">
+                Permanent internal records of buyer payments, seller settlements
+                and EPR Nexuss margin.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => fetchPaymentRecords()}
+            >
+              Refresh
+            </Button>
+          </div>
+
+          <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <StatCard
+              label="Payments received"
+              value={`₹${paymentRecords
+                .filter((p) => p.status === "received")
+                .reduce((sum, p) => sum + Number(p.amount || 0), 0)
+                .toLocaleString("en-IN")}`}
+              accent
+            />
+            <StatCard
+              label="Platform margin"
+              value={`₹${paymentRecords.reduce((sum, p) => sum + Number(p.platformMarginAmount || 0), 0).toLocaleString("en-IN")}`}
+            />
+            <StatCard
+              label="Seller settlements"
+              value={`₹${paymentRecords.reduce((sum, p) => sum + Number(p.sellerPayoutAmount || 0), 0).toLocaleString("en-IN")}`}
+            />
+            <StatCard
+              label="Awaiting verification"
+              value={String(
+                paymentRecords.filter((p) => p.status === "initiated").length,
+              )}
+            />
+          </div>
+
+          <Card className="overflow-hidden">
+            {paymentRecordsLoading ? (
+              <div className="p-12 text-center text-sm text-[#98A2B3]">
+                Loading payment records…
+              </div>
+            ) : paymentRecordsError ? (
+              <div className="p-12 text-center">
+                <p className="text-sm text-[#B42318]">{paymentRecordsError}</p>
+                <Button
+                  className="mt-3"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => fetchPaymentRecords()}
+                >
+                  Retry
+                </Button>
+              </div>
+            ) : paymentRecords.length === 0 ? (
+              <div className="p-12 text-center text-sm text-[#667085]">
+                No payment records yet.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table
+                  headers={[
+                    "Deal",
+                    "Buyer / Seller",
+                    "Amount received",
+                    "Seller payout",
+                    "Platform margin",
+                    "Payment",
+                    "Date",
+                    "Action",
+                  ]}
+                >
+                  {paymentRecords.map((payment) => {
+                    const deal = payment.dealId || {};
+                    const buyer = deal.buyerId || {};
+                    const seller = deal.sellerId || {};
+                    return (
+                      <Tr key={payment._id}>
+                        <Td className="font-semibold">
+                          #{String(deal._id || payment.dealId || "").slice(-8)}
+                        </Td>
+                        <Td>
+                          <span className="font-medium">
+                            {buyer.company || buyer.name || "Buyer"}
+                          </span>
+                          <span className="block text-[11px] text-[#98A2B3]">
+                            {seller.company || seller.name || "Seller"}
+                          </span>
+                        </Td>
+                        <Td>
+                          ₹{Number(payment.amount || 0).toLocaleString("en-IN")}
+                        </Td>
+                        <Td>
+                          ₹
+                          {Number(
+                            payment.sellerPayoutAmount || 0,
+                          ).toLocaleString("en-IN")}
+                        </Td>
+                        <Td className="font-semibold text-[#2E7D32]">
+                          ₹
+                          {Number(
+                            payment.platformMarginAmount || 0,
+                          ).toLocaleString("en-IN")}
+                        </Td>
+                        <Td>
+                          <Badge
+                            label={
+                              payment.status === "received"
+                                ? "Received"
+                                : payment.status === "initiated"
+                                  ? "Proof submitted"
+                                  : payment.status || "Pending"
+                            }
+                          />
+                        </Td>
+                        <Td>
+                          {payment.receivedAt
+                            ? new Date(payment.receivedAt).toLocaleDateString(
+                                "en-IN",
+                              )
+                            : payment.createdAt
+                              ? new Date(payment.createdAt).toLocaleDateString(
+                                  "en-IN",
+                                )
+                              : "—"}
+                        </Td>
+                        <Td>
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openPaymentReview(deal)}
+                            >
+                              {payment.status === "received"
+                                ? "View record"
+                                : "Review"}
+                            </Button>
+                            {payment.status === "received" &&
+                            payment.sellerPayoutStatus !== "paid" ? (
+                              <Button
+                                size="sm"
+                                onClick={() =>
+                                  setPayoutPrompt({
+                                    id: payment._id,
+                                    value: "",
+                                    title: "Record seller payout",
+                                    description: `Seller settlement: ₹${Number(payment.sellerPayoutAmount || 0).toLocaleString("en-IN")}. Enter the payout reference.`,
+                                  })
+                                }
+                              >
+                                Mark seller paid
+                              </Button>
+                            ) : null}
+                          </div>
+                        </Td>
+                      </Tr>
+                    );
+                  })}
+                </Table>
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
+
       {active === "disputes" && <DisputesPage role="admin" />}
 
       {active === "messages" && (
@@ -2051,12 +2556,34 @@ function AdminDashboard({ onNavigate }) {
       )}
 
       <PromptModal
+        open={Boolean(payoutPrompt)}
+        title={payoutPrompt?.title}
+        description={payoutPrompt?.description}
+        value={payoutPrompt?.value || ""}
+        onChange={(value) =>
+          setPayoutPrompt((current) =>
+            current ? { ...current, value } : current,
+          )
+        }
+        onCancel={() => setPayoutPrompt(null)}
+        onConfirm={() => {
+          if (!payoutPrompt?.value?.trim()) return;
+          markSellerPayout(payoutPrompt.id, payoutPrompt.value.trim());
+          setPayoutPrompt(null);
+        }}
+        confirmLabel="Mark paid"
+        placeholder="UTR / payout reference..."
+      />
+
+      <PromptModal
         open={Boolean(rejectionPrompt)}
         title={rejectionPrompt?.title}
         description={rejectionPrompt?.description}
         value={rejectionPrompt?.value || ""}
         onChange={(value) =>
-          setRejectionPrompt((current) => (current ? { ...current, value } : current))
+          setRejectionPrompt((current) =>
+            current ? { ...current, value } : current,
+          )
         }
         onCancel={() => setRejectionPrompt(null)}
         onConfirm={() => {
@@ -2073,38 +2600,170 @@ function AdminDashboard({ onNavigate }) {
         placeholder="Enter rejection reason..."
       />
 
+      {listingApprovalPrompt ? (
+        <ListingApprovalMarginModal
+          prompt={listingApprovalPrompt}
+          onCancel={() => setListingApprovalPrompt(null)}
+          onConfirm={(marginType, marginValue) =>
+            reviewListing(
+              listingApprovalPrompt.listing._id,
+              "active",
+              "",
+              marginType,
+              marginValue,
+            )
+          }
+        />
+      ) : null}
+
       {paymentReview ? (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/45 p-4">
           <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
             <div className="flex items-start justify-between gap-4 border-b border-[#E5EAF0] px-5 py-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#98A2B3]">Payment verification</p>
-                <h3 className="mt-1 text-lg font-semibold text-[#0F1923]">Deal #{paymentReview.deal._id.slice(-6)}</h3>
-                <p className="mt-1 text-xs text-[#667085]">Review the buyer's payment details and screenshot before confirming receipt.</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#98A2B3]">
+                  Payment verification
+                </p>
+                <h3 className="mt-1 text-lg font-semibold text-[#0F1923]">
+                  Deal #{paymentReview.deal._id.slice(-6)}
+                </h3>
+                <p className="mt-1 text-xs text-[#667085]">
+                  Review the buyer's payment details and screenshot before
+                  confirming receipt.
+                </p>
               </div>
-              <button type="button" onClick={closePaymentReview} className="rounded-lg p-2 text-[#667085] hover:bg-[#F2F4F7]" aria-label="Close payment review">×</button>
+              <button
+                type="button"
+                onClick={closePaymentReview}
+                className="rounded-lg p-2 text-[#667085] hover:bg-[#F2F4F7]"
+                aria-label="Close payment review"
+              >
+                ×
+              </button>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto p-5">
-              <div className="grid gap-3 sm:grid-cols-4">
-                <div className="rounded-xl border border-[#E5EAF0] bg-[#F8FAFC] p-3"><p className="text-[11px] uppercase tracking-wide text-[#98A2B3]">Amount</p><p className="mt-1 font-semibold text-[#101828]">₹{Number(paymentReview.payment.amount || 0).toLocaleString("en-IN")}</p></div>
-                <div className="rounded-xl border border-[#E5EAF0] bg-[#F8FAFC] p-3"><p className="text-[11px] uppercase tracking-wide text-[#98A2B3]">Method</p><p className="mt-1 font-semibold capitalize text-[#101828]">{String(paymentReview.payment.method || "—").replaceAll("_", " ")}</p></div>
-                <div className="rounded-xl border border-[#E5EAF0] bg-[#F8FAFC] p-3 sm:col-span-2"><p className="text-[11px] uppercase tracking-wide text-[#98A2B3]">UTR / Reference</p><p className="mt-1 break-all font-semibold text-[#101828]">{paymentReview.payment.reference || "Not provided"}</p></div>
+              <div className="grid gap-3 sm:grid-cols-5">
+                <div className="rounded-xl border border-[#E5EAF0] bg-[#F8FAFC] p-3">
+                  <p className="text-[11px] uppercase tracking-wide text-[#98A2B3]">
+                    Buyer payment
+                  </p>
+                  <p className="mt-1 font-semibold text-[#101828]">
+                    ₹
+                    {Number(paymentReview.payment.amount || 0).toLocaleString(
+                      "en-IN",
+                    )}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-[#E5EAF0] bg-[#F8FAFC] p-3">
+                  <p className="text-[11px] uppercase tracking-wide text-[#98A2B3]">
+                    Seller settlement
+                  </p>
+                  <p className="mt-1 font-semibold text-[#101828]">
+                    ₹
+                    {Number(
+                      paymentReview.payment.sellerPayoutAmount ||
+                        paymentReview.deal.sellerSubtotal ||
+                        paymentReview.deal.creditSubtotal ||
+                        0,
+                    ).toLocaleString("en-IN")}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-[#CFE8D1] bg-[#F5FBF6] p-3">
+                  <p className="text-[11px] uppercase tracking-wide text-[#2E7D32]">
+                    Platform margin
+                  </p>
+                  <p className="mt-1 font-semibold text-[#1B5E20]">
+                    ₹
+                    {Number(
+                      paymentReview.payment.platformMarginAmount ||
+                        paymentReview.deal.marginAmount ||
+                        paymentReview.deal.commissionAmount ||
+                        0,
+                    ).toLocaleString("en-IN")}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-[#E5EAF0] bg-[#F8FAFC] p-3">
+                  <p className="text-[11px] uppercase tracking-wide text-[#98A2B3]">
+                    Method
+                  </p>
+                  <p className="mt-1 font-semibold capitalize text-[#101828]">
+                    {String(paymentReview.payment.method || "—").replaceAll(
+                      "_",
+                      " ",
+                    )}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-[#E5EAF0] bg-[#F8FAFC] p-3">
+                  <p className="text-[11px] uppercase tracking-wide text-[#98A2B3]">
+                    UTR / Reference
+                  </p>
+                  <p className="mt-1 break-all font-semibold text-[#101828]">
+                    {paymentReview.payment.reference || "Not provided"}
+                  </p>
+                </div>
               </div>
               <div className="mt-4 rounded-xl border border-[#E5EAF0] p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div><p className="text-sm font-semibold text-[#101828]">Payment screenshot</p><p className="mt-1 text-xs text-[#667085]">{paymentReview.payment.proofFileName || "No screenshot attached"}</p></div>
-                  {paymentReview.payment.proofFileUrl ? <Button size="sm" variant="outline" onClick={viewPaymentProof} disabled={paymentActionLoading}>{paymentActionLoading ? "Loading…" : paymentProofUrl ? "Reload screenshot" : "View screenshot"}</Button> : null}
+                  <div>
+                    <p className="text-sm font-semibold text-[#101828]">
+                      Payment screenshot
+                    </p>
+                    <p className="mt-1 text-xs text-[#667085]">
+                      {paymentReview.payment.proofFileName ||
+                        "No screenshot attached"}
+                    </p>
+                  </div>
+                  {paymentReview.payment.proofFileUrl ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={viewPaymentProof}
+                      disabled={paymentActionLoading}
+                    >
+                      {paymentActionLoading
+                        ? "Loading…"
+                        : paymentProofUrl
+                          ? "Reload screenshot"
+                          : "View screenshot"}
+                    </Button>
+                  ) : null}
                 </div>
-                {paymentProofUrl ? <div className="mt-4 overflow-hidden rounded-xl border border-[#E5EAF0] bg-[#F7F9FB] p-2"><img src={paymentProofUrl} alt="Payment proof" className="mx-auto max-h-[420px] max-w-full rounded-lg object-contain" /></div> : null}
+                {paymentProofUrl ? (
+                  <div className="mt-4 overflow-hidden rounded-xl border border-[#E5EAF0] bg-[#F7F9FB] p-2">
+                    <img
+                      src={paymentProofUrl}
+                      alt="Payment proof"
+                      className="mx-auto max-h-[420px] max-w-full rounded-lg object-contain"
+                    />
+                  </div>
+                ) : null}
               </div>
               <div className="mt-4 rounded-xl border border-[#E5EAF0] bg-[#F8FAFC] p-4">
-                <p className="text-sm font-semibold text-[#101828]">Buyer note</p>
-                <p className="mt-1 whitespace-pre-wrap text-sm text-[#667085]">{paymentReview.payment.notes || "No note provided."}</p>
+                <p className="text-sm font-semibold text-[#101828]">
+                  Buyer note
+                </p>
+                <p className="mt-1 whitespace-pre-wrap text-sm text-[#667085]">
+                  {paymentReview.payment.notes || "No note provided."}
+                </p>
               </div>
             </div>
             <div className="flex flex-wrap justify-end gap-2 border-t border-[#E5EAF0] px-5 py-4">
-              <Button size="sm" variant="outline" onClick={closePaymentReview}>Close</Button>
-              {paymentReview.payment.status !== "received" ? <Button size="sm" onClick={async () => { await confirmPayment(paymentReview.deal); closePaymentReview(); }}>Verify Payment Received</Button> : <Badge label="Payment verified" />}
+              <Button size="sm" variant="outline" onClick={closePaymentReview}>
+                Close
+              </Button>
+              {paymentReview.payment.status !== "received" ? (
+                <Button
+                  size="sm"
+                  onClick={async () => {
+                    await confirmPayment(paymentReview.deal);
+                    closePaymentReview();
+                  }}
+                >
+                  Verify Payment Received
+                </Button>
+              ) : (
+                <Badge label="Payment verified" />
+              )}
             </div>
           </div>
         </div>

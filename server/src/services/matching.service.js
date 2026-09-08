@@ -4,6 +4,30 @@ import { createNotification } from "./notification.service.js";
 
 const normalize = (value) => String(value || "").trim().toLowerCase();
 
+const publicPrice = (listing) => {
+  const base = Number(listing?.price || 0);
+  const marginType = listing?.publicMarginType;
+  const marginValue = Number(listing?.publicMarginValue);
+
+  if (
+    marginType === "value" &&
+    Number.isFinite(marginValue) &&
+    marginValue >= 0
+  ) {
+    return Math.round((base + marginValue) * 100) / 100;
+  }
+
+  const rate = Number.isFinite(Number(listing?.publicMarkupRate))
+    ? Number(listing.publicMarkupRate)
+    : marginType === "percentage" && Number.isFinite(marginValue)
+      ? marginValue
+      : 10;
+
+  return Math.round(
+    base * (1 + Math.max(0, rate) / 100) * 100,
+  ) / 100;
+};
+
 const locationMatches = (requirement, listing) => {
   const requested = normalize(requirement.location);
   if (!requested || requested === "any location") return true;
@@ -17,7 +41,7 @@ export const scoreRequirementMatch = (requirement, listing) => {
   const requiredQuantity = Number(requirement.quantity || 0);
   const availableQuantity = getAvailableQuantity(listing);
   const budget = Number(requirement.budget || 0);
-  const price = Number(listing.price || 0);
+  const price = publicPrice(listing);
   const categoryMatch = normalize(requirement.type) === normalize(listing.category);
   const yearMatch = normalize(requirement.complianceYear) === normalize(listing.complianceYear);
   const budgetMatch = price > 0 && budget > 0 && price <= budget;
@@ -92,7 +116,7 @@ export const notifyBuyerAboutRequirementMatch = async ({ requirement, listing, s
     recipient: requirement.buyerId,
     type: "requirement_match_found",
     title: `New ${listing.category} match found`,
-    message: `${sellerName} has ${Number(score.availableQuantity).toLocaleString("en-IN")} MT available at ₹${Number(listing.price).toLocaleString("en-IN")}/MT. Match score: ${score.score}%.`,
+    message: `${sellerName} has ${Number(score.availableQuantity).toLocaleString("en-IN")} MT available at ₹${publicPrice(listing).toLocaleString("en-IN")}/MT. Match score: ${score.score}%.`,
     entityType: "requirement",
     entityId: requirement._id,
     metadata: {
@@ -101,7 +125,7 @@ export const notifyBuyerAboutRequirementMatch = async ({ requirement, listing, s
       listingId: listing._id,
       matchScore: score.score,
       availableQuantity: score.availableQuantity,
-      price: Number(listing.price || 0),
+      price: publicPrice(listing),
       category: listing.category,
     },
     dedupeKey,

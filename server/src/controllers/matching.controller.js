@@ -2,6 +2,21 @@ import mongoose from "mongoose";
 import BuyerRequirement from "../models/BuyerRequirement.js";
 import { findMatchingListings } from "../services/matching.service.js";
 
+export const publicPriceForMatch = (listing) => {
+  const base = Number(listing?.price || 0);
+  const marginType = listing?.publicMarginType;
+  const marginValue = Number(listing?.publicMarginValue);
+  if (marginType === "value" && Number.isFinite(marginValue) && marginValue >= 0) {
+    return Math.round((base + marginValue) * 100) / 100;
+  }
+  const rate = Number.isFinite(Number(listing?.publicMarkupRate))
+    ? Number(listing.publicMarkupRate)
+    : marginType === "percentage" && Number.isFinite(marginValue)
+      ? marginValue
+      : 10;
+  return Math.round(base * (1 + Math.max(0, rate) / 100) * 100) / 100;
+};
+
 export const getRequirementMatches = async (req, res) => {
   try {
     const { requirementId } = req.params;
@@ -22,7 +37,7 @@ export const getRequirementMatches = async (req, res) => {
     const matches = scoredMatches.map((match) => ({
       listingId: match.listing._id,
       seller: { id: match.listing.sellerId?._id, company: match.listing.sellerId?.company || match.listing.sellerId?.name || "Verified Seller", verifiedBadge: Boolean(match.listing.sellerId?.verifiedBadge) },
-      category: match.listing.category, availableQuantity: match.availableQuantity, requestedQuantity: remaining, price: match.listing.price, budget: Number(requirement.budget || 0), location: match.listing.location, complianceYear: match.listing.complianceYear, validTill: match.listing.validTill, matchScore: match.score, quantityCoverage: Math.min(match.availableQuantity, remaining), fullQuantityMatch: match.availableQuantity >= remaining, priceWithinBudget: match.budgetMatch, locationMatch: match.locationMatch, reasons: match.reasons,
+      category: match.listing.category, availableQuantity: match.availableQuantity, requestedQuantity: remaining, price: publicPriceForMatch(match.listing), budget: Number(requirement.budget || 0), location: match.listing.location, complianceYear: match.listing.complianceYear, validTill: match.listing.validTill, matchScore: match.score, quantityCoverage: Math.min(match.availableQuantity, remaining), fullQuantityMatch: match.availableQuantity >= remaining, priceWithinBudget: match.budgetMatch, locationMatch: match.locationMatch, reasons: match.reasons,
     }));
 
     return res.status(200).json({ success: true, requirement, count: matches.length, matches });

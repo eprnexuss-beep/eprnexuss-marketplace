@@ -4,7 +4,6 @@ import { Badge, Button, Card, Textarea } from "./ui";
 import { QuotationCard } from "./QuotationCenter.jsx";
 import { DisputePanel } from "./DisputeCenter.jsx";
 
-
 function DealRoomWorkflowHeader({ activeTab, status }) {
   const tabs = [
     ["overview", "1", "Overview"],
@@ -12,18 +11,27 @@ function DealRoomWorkflowHeader({ activeTab, status }) {
     ["quotation", "3", "Quotation"],
     ["payment", "4", "Payment"],
   ];
-  const paymentish = ["payment", "payment_pending", "payment_submitted", "payment_confirmed"].includes(String(status || "").toLowerCase());
+  const paymentish = [
+    "payment",
+    "payment_pending",
+    "payment_submitted",
+    "payment_confirmed",
+  ].includes(String(status || "").toLowerCase());
   const completed = String(status || "").toLowerCase() === "completed";
 
   return (
     <div className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        
-
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
-          <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Deal journey</div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+            Deal journey
+          </div>
           <div className="mt-1 text-sm font-semibold text-slate-900">
-            {completed ? "Deal completed" : paymentish ? "Payment stage" : "Continue your transaction"}
+            {completed
+              ? "Deal completed"
+              : paymentish
+                ? "Payment stage"
+                : "Continue your transaction"}
           </div>
         </div>
         <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
@@ -36,9 +44,14 @@ function DealRoomWorkflowHeader({ activeTab, status }) {
           const passed = i < tabs.findIndex(([k]) => k === activeTab);
           return (
             <div key={key} className="min-w-0">
-              <div className={`h-1 rounded-full ${current ? "bg-slate-900" : passed ? "bg-slate-300" : "bg-slate-100"}`} />
-              <div className={`mt-2 truncate text-[11px] font-semibold ${current ? "text-slate-900" : "text-slate-400"}`}>
-                <span className="mr-1">{passed ? "✓" : number}</span>{label}
+              <div
+                className={`h-1 rounded-full ${current ? "bg-slate-900" : passed ? "bg-slate-300" : "bg-slate-100"}`}
+              />
+              <div
+                className={`mt-2 truncate text-[11px] font-semibold ${current ? "text-slate-900" : "text-slate-400"}`}
+              >
+                <span className="mr-1">{passed ? "✓" : number}</span>
+                {label}
               </div>
             </div>
           );
@@ -309,13 +322,18 @@ function PaymentPanel({ deal, role, onDealUpdate }) {
       formData.append("reference", reference.trim());
       formData.append("notes", notes.trim());
       formData.append("paymentProof", proofFile);
-      const response = await api.post(`/payments/deal/${deal._id}/initiate`, formData);
+      const response = await api.post(
+        `/payments/deal/${deal._id}/initiate`,
+        formData,
+      );
       setPayment(response.data?.payment || null);
       setInvoice(response.data?.invoice || null);
       setProofFile(null);
       onDealUpdate?.(response.data?.deal);
     } catch (err) {
-      setError(err.response?.data?.message || "Unable to submit payment proof.");
+      setError(
+        err.response?.data?.message || "Unable to submit payment proof.",
+      );
     } finally {
       setActionLoading(false);
     }
@@ -356,7 +374,7 @@ function PaymentPanel({ deal, role, onDealUpdate }) {
       <div class="grid"><div><strong>Bill to</strong><p>${escapeHtml(buyer.company || buyer.name)}</p><p class="muted">${escapeHtml(buyer.email)}</p></div>
       <div><strong>Seller</strong><p>${escapeHtml(seller.company || seller.name)}</p><p class="muted">${escapeHtml(seller.email)}</p></div></div>
       <table><thead><tr><th>Description</th><th>Qty</th><th>Unit price</th><th>Amount</th></tr></thead><tbody>${itemRows}</tbody></table>
-      <div class="totals"><div class="row"><span>Subtotal</span><strong>₹${Number(invoice.subtotal || 0).toLocaleString("en-IN")}</strong></div><div class="row"><span>EPR Nexuss fee</span><strong>₹${Number(invoice.serviceFee || 0).toLocaleString("en-IN")}</strong></div><div class="row total"><span>Total</span><strong>₹${Number(invoice.total || 0).toLocaleString("en-IN")}</strong></div></div>
+      <div class="totals"><div class="row"><span>Total</span><strong>₹${Number(invoice.total || 0).toLocaleString("en-IN")}</strong></div></div>
       <p class="muted">Issued ${new Date(invoice.issuedAt).toLocaleDateString("en-IN")} · Status ${escapeHtml(invoice.status)}</p>
       <script>window.onload=function(){window.print();}</script></body></html>`);
     win.document.close();
@@ -481,19 +499,35 @@ function PaymentPanel({ deal, role, onDealUpdate }) {
                 className="mt-2 block w-full cursor-pointer rounded-lg border border-[#DCE3EA] bg-white px-3 py-2 text-sm font-normal text-[#475467] file:mr-3 file:rounded-md file:border-0 file:bg-[#EBF8EC] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-[#2E7D32]"
               />
             </label>
-            <p className="mt-2 text-[11px] text-[#98A2B3]">Upload the screenshot showing the successful payment. PNG, JPG or WEBP · max 10 MB.</p>
+            <p className="mt-2 text-[11px] text-[#98A2B3]">
+              Upload the screenshot showing the successful payment. PNG, JPG or
+              WEBP · max 10 MB.
+            </p>
             {proofFile ? (
               <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-[#CFE8D1] bg-white px-3 py-2">
                 <div className="min-w-0">
-                  <p className="truncate text-xs font-semibold text-[#344054]">{proofFile.name}</p>
-                  <p className="text-[10px] text-[#98A2B3]">{(proofFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                  <p className="truncate text-xs font-semibold text-[#344054]">
+                    {proofFile.name}
+                  </p>
+                  <p className="text-[10px] text-[#98A2B3]">
+                    {(proofFile.size / 1024 / 1024).toFixed(2)} MB
+                  </p>
                 </div>
-                <button type="button" className="text-xs font-semibold text-[#B42318]" onClick={() => setProofFile(null)}>Remove</button>
+                <button
+                  type="button"
+                  className="text-xs font-semibold text-[#B42318]"
+                  onClick={() => setProofFile(null)}
+                >
+                  Remove
+                </button>
               </div>
             ) : null}
           </div>
           <div className="mt-4 flex justify-end">
-            <Button onClick={initiate} disabled={actionLoading || !proofFile || !reference.trim()}>
+            <Button
+              onClick={initiate}
+              disabled={actionLoading || !proofFile || !reference.trim()}
+            >
               {actionLoading
                 ? "Submitting…"
                 : status === "failed"
@@ -510,7 +544,8 @@ function PaymentPanel({ deal, role, onDealUpdate }) {
             Payment proof submitted — awaiting admin verification
           </p>
           <p className="mt-1 text-sm leading-6 text-[#7C5A2E]">
-            Your UTR and payment screenshot have been sent to EPR Nexuss for verification.
+            Your UTR and payment screenshot have been sent to EPR Nexuss for
+            verification.
           </p>
         </Card>
       ) : null}
@@ -574,10 +609,12 @@ function PaymentPanel({ deal, role, onDealUpdate }) {
               <span className="text-[#667085]">Subtotal</span>
               <strong>{money(invoice.subtotal)}</strong>
             </div>
-            <div className="flex justify-between">
-              <span className="text-[#667085]">EPR Nexuss fee</span>
-              <strong>{money(invoice.serviceFee)}</strong>
-            </div>
+            {role === "admin" ? (
+              <div className="flex justify-between">
+                <span className="text-[#667085]">EPR Nexuss fee</span>
+                <strong>{money(invoice.serviceFee)}</strong>
+              </div>
+            ) : null}
             <div className="flex justify-between border-t border-[#E5EAF0] pt-3 text-base">
               <span className="font-semibold">Total</span>
               <strong>{money(invoice.total)}</strong>
@@ -597,7 +634,6 @@ function PaymentPanel({ deal, role, onDealUpdate }) {
     </div>
   );
 }
-
 
 function ReviewPanel({ deal, role }) {
   const [reviews, setReviews] = useState([]);
@@ -633,7 +669,11 @@ function ReviewPanel({ deal, role }) {
     try {
       setSaving(true);
       setError("");
-      await api.post("/reviews", { dealId: deal._id, rating, comment: comment.trim() });
+      await api.post("/reviews", {
+        dealId: deal._id,
+        rating,
+        comment: comment.trim(),
+      });
       setSaved(true);
       await loadReviews();
     } catch (err) {
@@ -646,8 +686,13 @@ function ReviewPanel({ deal, role }) {
   if (deal.status !== "completed") {
     return (
       <Card>
-        <p className="text-sm font-semibold text-[#344054]">Reviews unlock after completion</p>
-        <p className="mt-1 text-sm text-[#667085]">Once this deal is completed, both participants can rate their counterpart.</p>
+        <p className="text-sm font-semibold text-[#344054]">
+          Reviews unlock after completion
+        </p>
+        <p className="mt-1 text-sm text-[#667085]">
+          Once this deal is completed, both participants can rate their
+          counterpart.
+        </p>
       </Card>
     );
   }
@@ -655,23 +700,53 @@ function ReviewPanel({ deal, role }) {
   return (
     <div className="space-y-4">
       <Card className="ui-card rounded-2xl border-[#E4E9EE] p-5 shadow-sm sm:p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#98A2B3]">Your review</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#98A2B3]">
+          Your review
+        </p>
         {saved ? (
           <div className="mt-3 rounded-xl border border-[#CFE8D1] bg-[#F5FBF6] p-4">
-            <p className="text-sm font-semibold text-[#1F6B2A]">Review submitted</p>
-            <p className="mt-1 text-sm text-[#52705A]">Thank you. Your rating is now part of the participant's trust history.</p>
+            <p className="text-sm font-semibold text-[#1F6B2A]">
+              Review submitted
+            </p>
+            <p className="mt-1 text-sm text-[#52705A]">
+              Thank you. Your rating is now part of the participant's trust
+              history.
+            </p>
           </div>
         ) : (
           <>
-            <p className="mt-1 text-sm text-[#667085]">Rate your {role === "buyer" ? "seller" : "buyer"} after the completed transaction.</p>
+            <p className="mt-1 text-sm text-[#667085]">
+              Rate your {role === "buyer" ? "seller" : "buyer"} after the
+              completed transaction.
+            </p>
             <div className="mt-4 flex gap-1" aria-label="Choose rating">
               {[1, 2, 3, 4, 5].map((value) => (
-                <button key={value} type="button" onClick={() => setRating(value)} className={`text-2xl leading-none ${value <= rating ? "text-[#E6A700]" : "text-[#D0D5DD]"}`} aria-label={`${value} star${value > 1 ? "s" : ""}`}>★</button>
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setRating(value)}
+                  className={`text-2xl leading-none ${value <= rating ? "text-[#E6A700]" : "text-[#D0D5DD]"}`}
+                  aria-label={`${value} star${value > 1 ? "s" : ""}`}
+                >
+                  ★
+                </button>
               ))}
             </div>
-            <Textarea className="mt-4" value={comment} onChange={(event) => setComment(event.target.value)} placeholder="Optional feedback about the transaction…" maxLength={1000} />
-            {error ? <p className="mt-2 text-xs text-[#B42318]">{error}</p> : null}
-            <Button className="mt-3" disabled={!rating || saving} onClick={submit}>
+            <Textarea
+              className="mt-4"
+              value={comment}
+              onChange={(event) => setComment(event.target.value)}
+              placeholder="Optional feedback about the transaction…"
+              maxLength={1000}
+            />
+            {error ? (
+              <p className="mt-2 text-xs text-[#B42318]">{error}</p>
+            ) : null}
+            <Button
+              className="mt-3"
+              disabled={!rating || saving}
+              onClick={submit}
+            >
               {saving ? "Submitting…" : "Submit review"}
             </Button>
           </>
@@ -681,23 +756,53 @@ function ReviewPanel({ deal, role }) {
       <Card className="ui-card rounded-2xl border-[#E4E9EE] p-5 shadow-sm sm:p-6">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#98A2B3]">Deal reviews</p>
-            <p className="mt-1 text-sm text-[#667085]">Feedback left by the participants in this deal.</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#98A2B3]">
+              Deal reviews
+            </p>
+            <p className="mt-1 text-sm text-[#667085]">
+              Feedback left by the participants in this deal.
+            </p>
           </div>
-          <Badge label={`${reviews.length} review${reviews.length === 1 ? "" : "s"}`} />
+          <Badge
+            label={`${reviews.length} review${reviews.length === 1 ? "" : "s"}`}
+          />
         </div>
-        {loading ? <p className="mt-5 text-sm text-[#98A2B3]">Loading reviews…</p> : reviews.length === 0 ? <p className="mt-5 text-sm text-[#98A2B3]">No reviews have been submitted yet.</p> : (
+        {loading ? (
+          <p className="mt-5 text-sm text-[#98A2B3]">Loading reviews…</p>
+        ) : reviews.length === 0 ? (
+          <p className="mt-5 text-sm text-[#98A2B3]">
+            No reviews have been submitted yet.
+          </p>
+        ) : (
           <div className="mt-4 space-y-3">
             {reviews.map((item) => (
-              <div key={item._id} className="rounded-xl border border-[#E5EAF0] bg-[#F8FAFC] p-4 sm:p-5">
+              <div
+                key={item._id}
+                className="rounded-xl border border-[#E5EAF0] bg-[#F8FAFC] p-4 sm:p-5"
+              >
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-semibold text-[#344054]">{item.reviewerId?.company || item.reviewerId?.name || "Participant"}</p>
-                    <p className="text-xs text-[#98A2B3]">{item.reviewerId?.role === "seller" ? "Seller" : "Buyer"}</p>
+                    <p className="text-sm font-semibold text-[#344054]">
+                      {item.reviewerId?.company ||
+                        item.reviewerId?.name ||
+                        "Participant"}
+                    </p>
+                    <p className="text-xs text-[#98A2B3]">
+                      {item.reviewerId?.role === "seller" ? "Seller" : "Buyer"}
+                    </p>
                   </div>
-                  <span className="text-sm font-semibold text-[#E6A700]">{"★".repeat(item.rating)}<span className="text-[#D0D5DD]">{"★".repeat(5 - item.rating)}</span></span>
+                  <span className="text-sm font-semibold text-[#E6A700]">
+                    {"★".repeat(item.rating)}
+                    <span className="text-[#D0D5DD]">
+                      {"★".repeat(5 - item.rating)}
+                    </span>
+                  </span>
                 </div>
-                {item.comment ? <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#475467]">{item.comment}</p> : null}
+                {item.comment ? (
+                  <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#475467]">
+                    {item.comment}
+                  </p>
+                ) : null}
               </div>
             ))}
           </div>
@@ -806,7 +911,9 @@ export function DealRoom({
       { id: "quotation", label: "Quotation" },
       { id: "payment", label: "Payment & Invoice" },
       { id: "dispute", label: "Dispute" },
-      ...(deal?.status === "completed" ? [{ id: "review", label: "Review" }] : []),
+      ...(deal?.status === "completed"
+        ? [{ id: "review", label: "Review" }]
+        : []),
     ],
     [currentDeal?.status],
   );
@@ -836,12 +943,14 @@ export function DealRoom({
                         "Deal"
                       }
                     />
-                    <Badge
-                      label={
-                        PAYMENT_LABELS[currentDeal.paymentStatus] ||
-                        "Payment pending"
-                      }
-                    />
+                    {role === "buyer" ? (
+                      <Badge
+                        label={
+                          PAYMENT_LABELS[currentDeal.paymentStatus] ||
+                          "Payment pending"
+                        }
+                      />
+                    ) : null}
                   </div>
                   <p className="mt-2 text-xs leading-5 text-[#667085] sm:text-sm">
                     Deal #{String(currentDeal._id).slice(-8)} ·{" "}
@@ -864,7 +973,9 @@ export function DealRoom({
               >
                 <div className="flex min-w-max gap-1">
                   {tabs.map((item, index) => {
-                    const activeIndex = tabs.findIndex((entry) => entry.id === tab);
+                    const activeIndex = tabs.findIndex(
+                      (entry) => entry.id === tab,
+                    );
                     const completedStep = index < activeIndex;
                     const paymentStep = item.id === "payment";
                     return (
@@ -908,7 +1019,9 @@ export function DealRoom({
                     ? "Payment & Invoice is the next action for this transaction."
                     : "Use the navigation above to move through the deal."}
                 </p>
-                {tab !== "payment" && currentDeal.status === "terms_agreed" && role === "buyer" ? (
+                {tab !== "payment" &&
+                currentDeal.status === "terms_agreed" &&
+                role === "buyer" ? (
                   <button
                     type="button"
                     onClick={() => handleTabChange("payment")}
@@ -947,17 +1060,9 @@ export function DealRoom({
                         />
                         <Metric
                           label="Price / MT"
-                          value={money(currentDeal.agreedPrice)}
-                        />
-                        <Metric
-                          label="Credit value"
-                          value={money(currentDeal.creditSubtotal)}
-                        />
-                        <Metric
-                          label="EPR Nexuss fee"
                           value={money(
-                            currentDeal.serviceFee ??
-                              currentDeal.commissionAmount,
+                            currentDeal.buyerPricePerUnit ??
+                              currentDeal.agreedPrice,
                           )}
                         />
                         <Metric label="Buyer total" value={money(total)} />

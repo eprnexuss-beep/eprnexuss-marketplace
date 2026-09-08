@@ -50,3 +50,14 @@ export const uploadDocument = multer({
     files: 1,
   },
 });
+const disputeEvidenceStorage = multer.memoryStorage();
+
+export const uploadDisputeEvidence = multer({
+  storage: disputeEvidenceStorage,
+  fileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024,
+    files: 1,
+  },
+});
+

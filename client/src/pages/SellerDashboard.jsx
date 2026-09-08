@@ -1,6 +1,10 @@
 import api from "../services/api.js";
 import { useAuth } from "../context/AuthContext.jsx";
-import { NotificationBell, ProfileMenu, ProfileSection } from "../components/AccountTools.jsx";
+import {
+  NotificationBell,
+  ProfileMenu,
+  ProfileSection,
+} from "../components/AccountTools.jsx";
 import {
   Badge,
   Button,
@@ -12,7 +16,6 @@ import {
   Tr,
   Td,
 } from "../components/ui";
-import { DealRoom } from "../components/DealRoom.jsx";
 import { DealsSection } from "../components/DealsSection.jsx";
 import { DisputesPage } from "../components/DisputeCenter.jsx";
 import { MessageChat } from "../components/MessageCenter.jsx";
@@ -25,16 +28,26 @@ import { useSearchParams } from "react-router-dom";
 
 import VerificationStatusBanner from "../components/VerificationStatusBanner.jsx";
 
-function CompactSellerRequests({ requests = [], loading = false, error = "", onRetry, onRead }) {
+function CompactSellerRequests({
+  requests = [],
+  loading = false,
+  error = "",
+  onRetry,
+  onRead,
+}) {
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [expandedId, setExpandedId] = useState(null);
 
   const normalized = requests.map((request) => ({
     ...request,
-    _bucket: ["completed", "cancelled", "rejected"].includes(String(request.status || "").toLowerCase())
+    _bucket: ["completed", "cancelled", "rejected"].includes(
+      String(request.status || "").toLowerCase(),
+    )
       ? "closed"
-      : ["new", "reviewing"].includes(String(request.status || "").toLowerCase())
+      : ["new", "reviewing"].includes(
+            String(request.status || "").toLowerCase(),
+          )
         ? "new"
         : "active",
   }));
@@ -49,43 +62,256 @@ function CompactSellerRequests({ requests = [], loading = false, error = "", onR
     const q = query.trim().toLowerCase();
     if (!matches) return false;
     if (!q) return true;
-    return [r._id, r.listing?.category, r.listing?.location, r.buyer?.company, r.buyerId?.company, r.status]
-      .filter(Boolean).join(" ").toLowerCase().includes(q);
+    return [
+      r._id,
+      r.listing?.category,
+      r.listing?.location,
+      r.buyer?.company,
+      r.buyerId?.company,
+      r.status,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .includes(q);
   });
   const tone = {
     new: "bg-[#ECFDF3] text-[#087443] border-[#B7E4C7]",
     active: "bg-[#EEF4FF] text-[#175CD3] border-[#C7D7FE]",
     closed: "bg-[#F2F4F7] text-[#475467] border-[#D0D5DD]",
   };
-  const label = (r) => r._bucket === "new" ? "New request" : r._bucket === "closed" ? (r.status === "completed" ? "Completed" : "Closed") : (r.status || "In progress");
+  const label = (r) =>
+    r._bucket === "new"
+      ? "New request"
+      : r._bucket === "closed"
+        ? r.status === "completed"
+          ? "Completed"
+          : "Closed"
+        : r.status || "In progress";
 
-  if (loading) return <Card><div className="space-y-3 p-5"><div className="h-5 w-40 animate-pulse rounded bg-[#F2F4F7]"/><div className="h-20 animate-pulse rounded-xl bg-[#F8FAFC]"/><div className="h-20 animate-pulse rounded-xl bg-[#F8FAFC]"/></div></Card>;
-  if (error) return <Card><div className="p-8 text-center"><p className="text-sm font-semibold text-[#B42318]">Unable to load purchase requests</p><p className="mt-1 text-sm text-[#667085]">{error}</p><Button size="sm" variant="outline" className="mt-4" onClick={onRetry}>Retry</Button></div></Card>;
+  if (loading)
+    return (
+      <Card>
+        <div className="space-y-3 p-5">
+          <div className="h-5 w-40 animate-pulse rounded bg-[#F2F4F7]" />
+          <div className="h-20 animate-pulse rounded-xl bg-[#F8FAFC]" />
+          <div className="h-20 animate-pulse rounded-xl bg-[#F8FAFC]" />
+        </div>
+      </Card>
+    );
+  if (error)
+    return (
+      <Card>
+        <div className="p-8 text-center">
+          <p className="text-sm font-semibold text-[#B42318]">
+            Unable to load purchase requests
+          </p>
+          <p className="mt-1 text-sm text-[#667085]">{error}</p>
+          <Button
+            size="sm"
+            variant="outline"
+            className="mt-4"
+            onClick={onRetry}
+          >
+            Retry
+          </Button>
+        </div>
+      </Card>
+    );
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div><p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#98A2B3]">Seller workspace</p><h2 className="mt-1 font-heading text-xl font-semibold text-[#101828]">Purchase Requests</h2><p className="mt-1 text-sm text-[#667085]">Review incoming buyer requests and keep each transaction moving.</p></div>
-        <span className="rounded-full bg-[#F2F4F7] px-3 py-1.5 text-xs font-semibold text-[#475467]">{requests.length} request{requests.length === 1 ? "" : "s"}</span>
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#98A2B3]">
+            Seller workspace
+          </p>
+          <h2 className="mt-1 font-heading text-xl font-semibold text-[#101828]">
+            Purchase Requests
+          </h2>
+          <p className="mt-1 text-sm text-[#667085]">
+            Review incoming buyer requests and keep each transaction moving.
+          </p>
+        </div>
+        <span className="rounded-full bg-[#F2F4F7] px-3 py-1.5 text-xs font-semibold text-[#475467]">
+          {requests.length} request{requests.length === 1 ? "" : "s"}
+        </span>
       </div>
       <Card className="overflow-hidden">
         <div className="border-b border-[#EAECF0] p-3">
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search buyer, category, location or ID..." className="w-full rounded-xl border border-[#D0D5DD] bg-[#FCFCFD] px-3.5 py-2.5 text-sm text-[#344054] outline-none focus:border-[#3EA646]"/>
-          <div className="mt-3 flex flex-wrap gap-2">{[["all","All"],["new","New"],["active","In progress"],["closed","Closed"]].map(([key,text]) => <button key={key} type="button" onClick={() => setFilter(key)} className={`rounded-full px-3 py-1.5 text-xs font-semibold ${filter === key ? "bg-[#101828] text-white" : "bg-[#F2F4F7] text-[#475467] hover:bg-[#E4E7EC]"}`}>{text} <span className="ml-1 opacity-70">{counts[key]}</span></button>)}</div>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search buyer, category, location or ID..."
+            className="w-full rounded-xl border border-[#D0D5DD] bg-[#FCFCFD] px-3.5 py-2.5 text-sm text-[#344054] outline-none focus:border-[#3EA646]"
+          />
+          <div className="mt-3 flex flex-wrap gap-2">
+            {[
+              ["all", "All"],
+              ["new", "New"],
+              ["active", "In progress"],
+              ["closed", "Closed"],
+            ].map(([key, text]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setFilter(key)}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold ${filter === key ? "bg-[#101828] text-white" : "bg-[#F2F4F7] text-[#475467] hover:bg-[#E4E7EC]"}`}
+              >
+                {text} <span className="ml-1 opacity-70">{counts[key]}</span>
+              </button>
+            ))}
+          </div>
         </div>
-        {visible.length === 0 ? <div className="px-6 py-14 text-center"><p className="text-sm font-semibold text-[#344054]">No purchase requests found</p><p className="mt-1 text-sm text-[#667085]">Try another filter or search term.</p></div> : <div className="divide-y divide-[#EAECF0]">
-          {visible.map((request) => {
-            const id=request._id, open=expandedId===id, category=request.listing?.category||"Credit Request", qty=Number(request.requestedQuantity||0), price=request.listing?.price, location=request.listing?.location||"—", buyer=request.buyer?.company||request.buyerId?.company||request.buyerId?.name||"Verified Buyer";
-            return <div key={id} className="px-4 py-3.5 sm:px-5">
-              <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_250px_auto] lg:items-center">
-                <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 className="truncate text-sm font-semibold text-[#101828]">{category}</h3><span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${tone[request._bucket]}`}>{label(request)}</span></div><p className="mt-1 text-xs text-[#667085]">#{String(id).slice(-8)} · {qty.toLocaleString("en-IN")} MT · {location}</p><div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#667085]"><span>Buyer: {buyer}</span>{price != null && <span>₹{Number(price).toLocaleString("en-IN")}/MT</span>}{request.createdAt && <span>{new Date(request.createdAt).toLocaleDateString("en-IN")}</span>}</div></div>
-                <div className="rounded-xl bg-[#F8FAFC] px-3 py-2.5"><p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#98A2B3]">Next step</p><p className="mt-0.5 text-xs font-semibold text-[#344054]">{request._bucket === "new" ? "Review request" : request._bucket === "closed" ? "No action required" : "Keep transaction moving"}</p></div>
-                <div className="flex items-center gap-2 lg:justify-end"><button type="button" onClick={() => setExpandedId(open ? null : id)} className="rounded-lg border border-[#D0D5DD] px-3 py-2 text-xs font-semibold text-[#475467] hover:bg-[#F9FAFB]">{open ? "Hide" : "Details"}</button><Button size="sm" variant="outline" onClick={() => { onRead?.(id); }} >Messages</Button></div>
-              </div>
-              {open && <div className="mt-3 grid gap-3 rounded-xl border border-[#EAECF0] bg-[#FCFCFD] p-3 sm:grid-cols-2 lg:grid-cols-4"><div><p className="text-[10px] uppercase tracking-wider text-[#98A2B3]">Buyer</p><p className="mt-1 text-sm font-medium text-[#344054]">{buyer}</p></div><div><p className="text-[10px] uppercase tracking-wider text-[#98A2B3]">Quantity</p><p className="mt-1 text-sm font-medium text-[#344054]">{qty.toLocaleString("en-IN")} MT</p></div><div><p className="text-[10px] uppercase tracking-wider text-[#98A2B3]">Listed price</p><p className="mt-1 text-sm font-medium text-[#344054]">{price != null ? `₹${Number(price).toLocaleString("en-IN")}/MT` : "—"}</p></div><div><p className="text-[10px] uppercase tracking-wider text-[#98A2B3]">Estimated value</p><p className="mt-1 text-sm font-semibold text-[#2E7D32]">₹{(qty*Number(price||0)).toLocaleString("en-IN")}</p></div>{request.notes && <div className="sm:col-span-2 lg:col-span-4 border-t border-[#EAECF0] pt-3"><p className="text-[10px] uppercase tracking-wider text-[#98A2B3]">Buyer requirements</p><p className="mt-1 text-sm text-[#475467]">{request.notes}</p></div>}<div className="sm:col-span-2 lg:col-span-4"><MessageChat requestId={id} role="seller" compact onRead={onRead}/></div></div>}
-            </div>;
-          })}
-        </div>}
+        {visible.length === 0 ? (
+          <div className="px-6 py-14 text-center">
+            <p className="text-sm font-semibold text-[#344054]">
+              No purchase requests found
+            </p>
+            <p className="mt-1 text-sm text-[#667085]">
+              Try another filter or search term.
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-[#EAECF0]">
+            {visible.map((request) => {
+              const id = request._id,
+                open = expandedId === id,
+                category = request.listing?.category || "Credit Request",
+                qty = Number(request.requestedQuantity || 0),
+                price = request.listing?.price,
+                location = request.listing?.location || "—",
+                buyer =
+                  request.buyer?.company ||
+                  request.buyerId?.company ||
+                  request.buyerId?.name ||
+                  "Verified Buyer";
+              return (
+                <div key={id} className="px-4 py-3.5 sm:px-5">
+                  <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_250px_auto] lg:items-center">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="truncate text-sm font-semibold text-[#101828]">
+                          {category}
+                        </h3>
+                        <span
+                          className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${tone[request._bucket]}`}
+                        >
+                          {label(request)}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs text-[#667085]">
+                        #{String(id).slice(-8)} · {qty.toLocaleString("en-IN")}{" "}
+                        MT · {location}
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#667085]">
+                        <span>Buyer: {buyer}</span>
+                        {price != null && (
+                          <span>
+                            ₹{Number(price).toLocaleString("en-IN")}/MT
+                          </span>
+                        )}
+                        {request.createdAt && (
+                          <span>
+                            {new Date(request.createdAt).toLocaleDateString(
+                              "en-IN",
+                            )}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="rounded-xl bg-[#F8FAFC] px-3 py-2.5">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#98A2B3]">
+                        Next step
+                      </p>
+                      <p className="mt-0.5 text-xs font-semibold text-[#344054]">
+                        {request._bucket === "new"
+                          ? "Review request"
+                          : request._bucket === "closed"
+                            ? "No action required"
+                            : "Keep transaction moving"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 lg:justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedId(open ? null : id)}
+                        className="rounded-lg border border-[#D0D5DD] px-3 py-2 text-xs font-semibold text-[#475467] hover:bg-[#F9FAFB]"
+                      >
+                        {open ? "Hide" : "Details"}
+                      </button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          onRead?.(id);
+                        }}
+                      >
+                        Messages
+                      </Button>
+                    </div>
+                  </div>
+                  {open && (
+                    <div className="mt-3 grid gap-3 rounded-xl border border-[#EAECF0] bg-[#FCFCFD] p-3 sm:grid-cols-2 lg:grid-cols-4">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wider text-[#98A2B3]">
+                          Buyer
+                        </p>
+                        <p className="mt-1 text-sm font-medium text-[#344054]">
+                          {buyer}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wider text-[#98A2B3]">
+                          Quantity
+                        </p>
+                        <p className="mt-1 text-sm font-medium text-[#344054]">
+                          {qty.toLocaleString("en-IN")} MT
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wider text-[#98A2B3]">
+                          Listed price
+                        </p>
+                        <p className="mt-1 text-sm font-medium text-[#344054]">
+                          {price != null
+                            ? `₹${Number(price).toLocaleString("en-IN")}/MT`
+                            : "—"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wider text-[#98A2B3]">
+                          Estimated value
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-[#2E7D32]">
+                          ₹{(qty * Number(price || 0)).toLocaleString("en-IN")}
+                        </p>
+                      </div>
+                      {request.notes && (
+                        <div className="sm:col-span-2 lg:col-span-4 border-t border-[#EAECF0] pt-3">
+                          <p className="text-[10px] uppercase tracking-wider text-[#98A2B3]">
+                            Buyer requirements
+                          </p>
+                          <p className="mt-1 text-sm text-[#475467]">
+                            {request.notes}
+                          </p>
+                        </div>
+                      )}
+                      <div className="sm:col-span-2 lg:col-span-4">
+                        <MessageChat
+                          requestId={id}
+                          role="seller"
+                          compact
+                          onRead={onRead}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </Card>
     </div>
   );
@@ -134,9 +360,23 @@ const NAV = [
     id: "inventory",
     label: "Inventory",
     icon: (
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4 7.5L12 3l8 4.5v9L12 21l-8-4.5v-9z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4 7.5l8 4.5 8-4.5M12 12v9" />
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={1.5}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M4 7.5L12 3l8 4.5v9L12 21l-8-4.5v-9z"
+        />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M4 7.5l8 4.5 8-4.5M12 12v9"
+        />
       </svg>
     ),
   },
@@ -182,8 +422,18 @@ const NAV = [
     id: "earnings",
     label: "Earnings & Settlements",
     icon: (
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v18M17 7.5c0-1.7-2.2-3-5-3s-5 1.3-5 3 2.2 3 5 3 5 1.3 5 3-2.2 3-5 3-5-1.3-5-3" />
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={1.5}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M12 3v18M17 7.5c0-1.7-2.2-3-5-3s-5 1.3-5 3 2.2 3 5 3 5 1.3 5 3-2.2 3-5 3-5-1.3-5-3"
+        />
       </svg>
     ),
   },
@@ -191,8 +441,18 @@ const NAV = [
     id: "analytics",
     label: "Analytics",
     icon: (
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4 19V5m0 14h16M7 16v-5m5 5V7m5 9v-8" />
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={1.5}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M4 19V5m0 14h16M7 16v-5m5 5V7m5 9v-8"
+        />
       </svg>
     ),
   },
@@ -276,38 +536,27 @@ const NAV = [
 function SellerDashboard({ onNavigate }) {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const validSections = useMemo(() => new Set(["dashboard", "listings", "inventory", "requests", "deals", "earnings", "analytics", "disputes", "messages", "documents", "profile"]), []);
-  const initialSection = validSections.has(searchParams.get("section")) ? searchParams.get("section") : "dashboard";
+  const validSections = useMemo(
+    () =>
+      new Set([
+        "dashboard",
+        "listings",
+        "inventory",
+        "requests",
+        "deals",
+        "earnings",
+        "analytics",
+        "disputes",
+        "messages",
+        "documents",
+        "profile",
+      ]),
+    [],
+  );
+  const initialSection = validSections.has(searchParams.get("section"))
+    ? searchParams.get("section")
+    : "dashboard";
   const [active, setActive] = useState(initialSection);
-  const validDealTabs = useMemo(() => new Set(["overview", "messages", "quotation", "payment", "dispute", "review"]), []);
-  const openDealId = searchParams.get("deal");
-  const openDealTab = validDealTabs.has(searchParams.get("dealTab")) ? searchParams.get("dealTab") : "overview";
-
-  const openDealRoom = (deal, tab = "overview") => {
-    if (!deal?._id) return;
-    setActive("deals");
-    const next = new URLSearchParams(searchParams);
-    next.set("section", "deals");
-    next.set("deal", String(deal._id));
-    if (validDealTabs.has(tab) && tab !== "overview") next.set("dealTab", tab);
-    else next.delete("dealTab");
-    setSearchParams(next);
-  };
-
-  const closeDealRoom = () => {
-    const next = new URLSearchParams(searchParams);
-    next.delete("deal");
-    next.delete("dealTab");
-    setSearchParams(next, { replace: true });
-  };
-
-  const updateDealRoomTab = (tab) => {
-    const next = new URLSearchParams(searchParams);
-    next.set("section", "deals");
-    if (validDealTabs.has(tab) && tab !== "overview") next.set("dealTab", tab);
-    else next.delete("dealTab");
-    setSearchParams(next, { replace: true });
-  };
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [purchaseRequests, setPurchaseRequests] = useState([]);
   const [requestLoading, setRequestLoading] = useState(true);
@@ -406,7 +655,6 @@ function SellerDashboard({ onNavigate }) {
   useEffect(() => {
     fetchPurchaseRequests();
     fetchSellerDeals();
-  
 
     const refresh = () => {
       fetchSellerDeals({ silent: true });
@@ -482,7 +730,8 @@ function SellerDashboard({ onNavigate }) {
     );
     const available = activeListings.reduce(
       (sum, listing) =>
-        sum + Math.max(
+        sum +
+        Math.max(
           Number(listing.quantity || 0) - Number(listing.reservedQuantity || 0),
           0,
         ),
@@ -512,10 +761,8 @@ function SellerDashboard({ onNavigate }) {
       ["new", "reviewing", "matched", "negotiating"].includes(request.status),
     ).length;
     const unread = visibleUnreadCount;
-    const paymentDeals = sellerDeals.filter(
-      (deal) =>
-        deal.status === "payment_coordination" &&
-        ["pending", "initiated"].includes(deal.paymentStatus),
+    const inProgressDeals = sellerDeals.filter(
+      (deal) => !["completed", "cancelled"].includes(deal.status),
     ).length;
 
     if (openRequests > 0) {
@@ -538,10 +785,11 @@ function SellerDashboard({ onNavigate }) {
       });
     }
 
-    if (paymentDeals > 0) {
+    if (inProgressDeals > 0) {
       items.push({
-        title: `${paymentDeals} deal${paymentDeals === 1 ? "" : "s"} awaiting payment`,
-        description: "Payment coordination is in progress for these deals.",
+        title: `${inProgressDeals} deal${inProgressDeals === 1 ? "" : "s"} in progress`,
+        description:
+          "EPR Nexuss is coordinating these transactions with buyers.",
         action: () => setActive("deals"),
         label: "View deals",
         tone: "amber",
@@ -595,11 +843,7 @@ function SellerDashboard({ onNavigate }) {
             </svg>
           </div>
           <div>
-            <p
-              className="text-sm font-bold text-[#0F1923]"
-            >
-              EPR Nexuss
-            </p>
+            <p className="text-sm font-bold text-[#0F1923]">EPR Nexuss</p>
             <p className="text-[10px] text-[#6B7280]">Seller Portal</p>
           </div>
         </div>
@@ -705,9 +949,7 @@ function SellerDashboard({ onNavigate }) {
                 />
               </svg>
             </button>
-            <h1
-              className="text-base font-semibold text-[#0F1923]"
-            >
+            <h1 className="text-base font-semibold text-[#0F1923]">
               {NAV.find((n) => n.id === active)?.label ?? "Dashboard"}
             </h1>
           </div>
@@ -1018,7 +1260,10 @@ function SellerDashboard({ onNavigate }) {
           )}
 
           {active === "inventory" && (
-            <SellerInventorySection listings={sellerListings} deals={sellerDeals} />
+            <SellerInventorySection
+              listings={sellerListings}
+              deals={sellerDeals}
+            />
           )}
 
           {active === "earnings" && (
@@ -1026,7 +1271,11 @@ function SellerDashboard({ onNavigate }) {
           )}
 
           {active === "analytics" && (
-            <SellerAnalyticsSection listings={sellerListings} deals={sellerDeals} requests={purchaseRequests} />
+            <SellerAnalyticsSection
+              listings={sellerListings}
+              deals={sellerDeals}
+              requests={purchaseRequests}
+            />
           )}
           {active === "requests" && (
             <CompactSellerRequests
@@ -1044,11 +1293,6 @@ function SellerDashboard({ onNavigate }) {
               role="seller"
               loading={dealLoading}
               error={dealError}
-              openDealId={openDealId}
-              openDealTab={openDealTab}
-              onOpenDealRoom={openDealRoom}
-              onCloseDealRoom={closeDealRoom}
-              onDealRoomTabChange={updateDealRoomTab}
             />
           )}
 
