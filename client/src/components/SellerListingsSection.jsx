@@ -3,7 +3,7 @@ import { toast } from "react-toastify";
 import api from "../services/api.js";
 import { CREDIT_TYPES } from "../data/mock.js";
 import { INDIAN_LOCATIONS } from "../constants/indianStates.js";
-import { Badge, Button, Card, Input, Select, Table, Tr, Td, Textarea } from "./ui.jsx";
+import { Badge, Button, Card, CreditTypeAvatar, Input, Select, Table, Tr, Td, Textarea } from "./ui.jsx";
 
 const formatDateInput = (value) => {
   if (!value) return "";
@@ -237,7 +237,15 @@ function SellerListingsSection({ listings, loading, error, onRefresh, onNavigate
                 const available = Math.max(quantity - reserved, 0);
                 const sold = Math.max(total - quantity, 0);
                 return <Tr key={listing._id}>
-                  <Td><span className="font-semibold text-[#101828]">{listing.category}</span><span className="mt-0.5 block text-[11px] text-[#98A2B3]">#{String(listing._id).slice(-8)}</span></Td>
+                  <Td>
+                    <div className="flex items-center gap-2.5">
+                      <CreditTypeAvatar type={listing.category} size="sm" />
+                      <div>
+                        <span className="font-semibold text-[#101828]">{listing.category}</span>
+                        <span className="mt-0.5 block text-[11px] text-[#98A2B3]">#{String(listing._id).slice(-8)}</span>
+                      </div>
+                    </div>
+                  </Td>
                   <Td><div className="text-xs"><span className="font-semibold text-[#101828]">{available.toLocaleString("en-IN")} MT available</span><span className="mt-0.5 block text-[#98A2B3]">{reserved.toLocaleString("en-IN")} reserved · {sold.toLocaleString("en-IN")} sold</span></div></Td>
                   <Td>₹{Number(listing.price || 0).toLocaleString("en-IN")}</Td>
                   <Td>{listing.location || "—"}</Td>

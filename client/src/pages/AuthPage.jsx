@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { Button, Input } from "../components/ui";
+import { Button, Input, PasswordInput } from "../components/ui";
+import { validatePassword } from "../utils/password";
 import { useAuth } from "../context/AuthContext.jsx";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
@@ -181,13 +182,9 @@ function AuthPage({ onNavigate, initialMode = "login" }) {
       return;
     }
 
-    if (!form.password) {
-      setError("Please create a password.");
-      return;
-    }
-
-    if (form.password.length < 6) {
-      setError("Password must be at least 8 characters long.");
+    const passwordError = validatePassword(form.password);
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
 
@@ -270,11 +267,16 @@ function AuthPage({ onNavigate, initialMode = "login" }) {
   };
 
   return (
-    <div className="pro-page min-h-screen bg-[#F7F9FB] flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
+    <div className="pro-page relative min-h-screen overflow-hidden bg-[#F7F9FB] flex items-center justify-center px-4 py-12">
+      <div
+        className="pointer-events-none absolute -top-32 left-1/2 h-[420px] w-[720px] -translate-x-1/2 rounded-full opacity-[0.14] blur-3xl"
+        style={{ background: "var(--brand-gradient)" }}
+        aria-hidden="true"
+      />
+      <div className="relative w-full max-w-md">
         <div className="text-center mb-7">
           <div className="inline-flex items-center gap-2 mb-4">
-            <div className="w-9 h-9 rounded-xl bg-[#5AC361] flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl brand-gradient shadow-[0_6px_16px_rgba(47,163,68,0.28)] flex items-center justify-center">
               <svg
                 className="w-5 h-5 text-white"
                 fill="none"
@@ -310,7 +312,7 @@ function AuthPage({ onNavigate, initialMode = "login" }) {
           </p>
         </div>
 
-        <div className="bg-white border border-[#E5EAF0] rounded-2xl p-6 shadow-sm">
+        <div className="animate-card-in bg-white border border-[#E5EAF0] rounded-2xl p-6 shadow-[0_20px_50px_rgba(15,23,42,0.08)]">
           <div className="flex gap-2 mb-5 p-1 bg-[#F0F4F8] rounded-xl">
             {[
               ["buyer", "Buyer"],
@@ -391,11 +393,15 @@ function AuthPage({ onNavigate, initialMode = "login" }) {
               }
             />
 
-            <Input
+            <PasswordInput
               label="Password *"
-              type="password"
-              placeholder="At least 8 characters"
+              placeholder={
+                mode === "signup"
+                  ? "8+ characters, 1 uppercase, 1 number, 1 symbol"
+                  : "Enter your password"
+              }
               value={form.password}
+              showStrength={mode === "signup"}
               onChange={(event) =>
                 setForm((current) => ({
                   ...current,

@@ -64,13 +64,13 @@ const btnBase =
 
 const btnVariants = {
   primary:
-    "rounded-lg bg-[#5AC361] text-white shadow-sm hover:bg-[#3EA646] hover:shadow-md",
+    "rounded-lg bg-gradient-to-b from-[#63CB6A] to-[#3EA646] text-white shadow-[0_1px_2px_rgba(16,24,40,0.06),0_1px_1px_rgba(16,24,40,0.04)] hover:shadow-[0_6px_16px_rgba(62,166,70,0.28)] hover:brightness-[1.03]",
   secondary: "rounded-lg bg-[#F0F4F8] text-[#344054] hover:bg-[#E6EBF1]",
   outline:
     "rounded-lg border border-[#DCE3EA] bg-white text-[#344054] shadow-sm hover:border-[#C8D1DB] hover:bg-[#F8FAFC]",
   ghost: "rounded-lg text-[#475467] hover:bg-[#F0F4F8] hover:text-[#1F2937]",
   danger:
-    "rounded-lg bg-[#EF4444] text-white shadow-sm hover:bg-[#DC2626] hover:shadow-md",
+    "rounded-lg bg-gradient-to-b from-[#F97066] to-[#DC2626] text-white shadow-sm hover:shadow-[0_6px_16px_rgba(220,38,38,0.28)] hover:brightness-[1.03]",
 };
 
 const btnSizes = {
@@ -442,6 +442,129 @@ function CreditTypeIcon({ type }) {
   return <>{icons[type] ?? icons.Battery}</>;
 }
 
+// Distinct accent per credit category so listing cards, deal rows and
+// tables read at a glance instead of everything sharing one brand color.
+const creditTypeAccents = {
+  Battery: "bg-amber-50 text-amber-600 ring-1 ring-amber-100",
+  Plastic: "bg-blue-50 text-blue-600 ring-1 ring-blue-100",
+  "E-Waste": "bg-violet-50 text-violet-600 ring-1 ring-violet-100",
+  ELV: "bg-slate-100 text-slate-600 ring-1 ring-slate-200",
+  "Used Oil": "bg-orange-50 text-orange-600 ring-1 ring-orange-100",
+  Tyre: "bg-zinc-100 text-zinc-700 ring-1 ring-zinc-200",
+};
+
+const creditAvatarSizes = {
+  sm: "h-8 w-8 [&_svg]:h-4 [&_svg]:w-4",
+  md: "h-10 w-10 [&_svg]:h-5 [&_svg]:w-5",
+  lg: "h-12 w-12 [&_svg]:h-6 [&_svg]:w-6",
+  xl: "h-14 w-14 [&_svg]:h-7 [&_svg]:w-7",
+};
+
+function CreditTypeAvatar({ type, size = "md", className = "" }) {
+  return (
+    <div
+      className={`flex shrink-0 items-center justify-center rounded-xl transition-transform duration-300 ${creditAvatarSizes[size] ?? creditAvatarSizes.md} ${creditTypeAccents[type] ?? "bg-[#EDF8EF] text-[#3E9C45] ring-1 ring-[#d4efd6]"} ${className}`}
+    >
+      <CreditTypeIcon type={type} />
+    </div>
+  );
+}
+
+const PASSWORD_RULES = [
+  { key: "length", label: "8+ characters", test: (v) => v.length >= 8 },
+  { key: "upper", label: "One uppercase letter", test: (v) => /[A-Z]/.test(v) },
+  { key: "number", label: "One number", test: (v) => /[0-9]/.test(v) },
+  {
+    key: "special",
+    label: "One special character",
+    test: (v) => /[^A-Za-z0-9]/.test(v),
+  },
+];
+
+const EyeIcon = ({ off }) => (
+  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7} aria-hidden="true">
+    {off ? (
+      <>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18M10.584 10.587a2 2 0 002.828 2.83M9.363 5.365A9.466 9.466 0 0112 5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.336M6.228 6.228A10.451 10.451 0 001.935 12.5C3.226 16.836 7.244 20 12 20a9.46 9.46 0 004.362-1.048" />
+      </>
+    ) : (
+      <>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      </>
+    )}
+  </svg>
+);
+
+function PasswordInput({
+  label,
+  error,
+  hint,
+  className = "",
+  id,
+  showStrength = false,
+  value = "",
+  ...props
+}) {
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      {label && (
+        <label htmlFor={id} className="text-sm font-semibold text-[#344054]">
+          {label}
+        </label>
+      )}
+      <div className="relative">
+        <input
+          id={id}
+          value={value}
+          type={visible ? "text" : "password"}
+          className={`min-h-10 w-full rounded-lg border bg-white px-3 py-2 pr-10 text-sm text-[#101828] shadow-sm outline-none transition-all placeholder:text-[#98A2B3] focus:border-[#5AC361] focus:ring-4 focus:ring-[#5AC361]/10 disabled:cursor-not-allowed disabled:bg-[#F8FAFC] disabled:text-[#98A2B3] ${error ? "border-[#F04438] focus:border-[#F04438] focus:ring-[#F04438]/10" : "border-[#DCE3EA]"} ${className}`}
+          aria-invalid={Boolean(error)}
+          {...props}
+        />
+        <button
+          type="button"
+          tabIndex={-1}
+          onClick={() => setVisible((current) => !current)}
+          aria-label={visible ? "Hide password" : "Show password"}
+          className="absolute right-2.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-[#98A2B3] transition-colors hover:bg-[#F2F4F7] hover:text-[#475467] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5AC361]"
+        >
+          <EyeIcon off={visible} />
+        </button>
+      </div>
+      {showStrength && value ? (
+        <div className="mt-0.5 grid grid-cols-2 gap-x-3 gap-y-1.5">
+          {PASSWORD_RULES.map((rule) => {
+            const pass = rule.test(value);
+            return (
+              <div
+                key={rule.key}
+                className={`flex items-center gap-1.5 text-[11px] font-medium transition-colors ${pass ? "text-[#2E7D32]" : "text-[#98A2B3]"}`}
+              >
+                <span
+                  className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full transition-colors ${pass ? "bg-[#2E7D32] text-white" : "bg-[#E4E7EC] text-transparent"}`}
+                >
+                  <svg className="h-2 w-2" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                    <path d="M10 3L5 8.5 2 5.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+                {rule.label}
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+      {error ? (
+        <span className="text-xs font-medium text-[#D92D20]">{error}</span>
+      ) : hint ? (
+        <span className="text-xs text-[#667085]">{hint}</span>
+      ) : null}
+    </div>
+  );
+}
+
 function DashboardShell({
   nav,
   active,
@@ -763,10 +886,12 @@ export {
   Button,
   Card,
   ConfidentialityBanner,
+  CreditTypeAvatar,
   CreditTypeIcon,
   EmptyState,
   Input,
   PageHeader,
+  PasswordInput,
   PromptModal,
   SectionHeader,
   Select,

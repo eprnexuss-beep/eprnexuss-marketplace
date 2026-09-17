@@ -1,7 +1,7 @@
 import { toast } from "react-toastify";
 import { useEffect, useMemo, useState } from "react";
 import { CREDIT_TYPES } from "../data/mock";
-import { Badge, CreditTypeIcon } from "../components/ui";
+import { Badge, CreditTypeAvatar } from "../components/ui";
 import api from "../services/api.js";
 import { useAuth } from "../context/AuthContext.jsx";
 
@@ -495,16 +495,14 @@ function ListingCard({
 }) {
   return (
     <article
-      className="group relative flex min-h-[338px] cursor-pointer flex-col overflow-hidden rounded-2xl border border-[#E5EAF0] bg-white p-5 shadow-[0_2px_8px_rgba(16,24,40,0.035)] transition-all duration-300 hover:-translate-y-1 hover:border-[#CFE2D1] hover:shadow-[0_18px_38px_rgba(16,24,40,0.10)]"
-      style={{ animationDelay: `${index * 45}ms` }}
+      className="animate-card-in group relative flex min-h-[338px] cursor-pointer flex-col overflow-hidden rounded-2xl border border-[#E5EAF0] bg-white p-5 shadow-[0_2px_8px_rgba(16,24,40,0.035)] transition-all duration-300 hover:-translate-y-1 hover:border-[#CFE2D1] hover:shadow-[0_18px_38px_rgba(16,24,40,0.10)]"
+      style={{ animationDelay: `${Math.min(index, 10) * 45}ms` }}
       onClick={() => onNavigate("credit-detail", credit._id)}
     >
       <div className="absolute inset-x-0 top-0 h-1 origin-left scale-x-0 bg-[#5AC361] transition-transform duration-300 group-hover:scale-x-100" />
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EDF8EF] text-[#3E9C45] transition-transform duration-300 group-hover:scale-105">
-            <CreditTypeIcon type={credit.category} />
-          </div>
+          <CreditTypeAvatar type={credit.category} className="group-hover:scale-105" />
           <Badge
             label={
               credit.sellerId?.verifiedBadge ? "Verified Seller" : "Verified"

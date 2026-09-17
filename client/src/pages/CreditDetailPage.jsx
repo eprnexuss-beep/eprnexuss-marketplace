@@ -6,7 +6,7 @@ import {
   Button,
   Card,
   ConfidentialityBanner,
-  CreditTypeIcon,
+  CreditTypeAvatar,
   Input,
   SectionHeader,
   Textarea,
@@ -554,9 +554,7 @@ function CreditDetailPage({ creditId, onNavigate }) {
               <div className="border-b border-[#E5EAF0] p-5 sm:p-7">
                 <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex min-w-0 items-start gap-4">
-                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#EBF8EC] text-[#3EA646]">
-                      <CreditTypeIcon type={credit.category} />
-                    </div>
+                    <CreditTypeAvatar type={credit.category} size="xl" />
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge label="Active" />
@@ -887,9 +885,7 @@ function SimilarCredits({ currentListing, onNavigate }) {
               className="group rounded-xl border border-[#E5EAF0] bg-white p-4 text-left transition-all hover:-translate-y-0.5 hover:border-[#C8D1DB] hover:shadow-[0_8px_24px_rgba(16,24,40,0.06)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5AC361]"
             >
               <div className="flex items-center justify-between gap-3">
-                <span className="rounded-lg bg-[#EBF8EC] p-2 text-[#3EA646]">
-                  <CreditTypeIcon type={listing.category} />
-                </span>
+                <CreditTypeAvatar type={listing.category} size="sm" />
                 <Icon className="h-4 w-4 text-[#98A2B3] transition-transform group-hover:translate-x-0.5">
                   <path d="M5 12h14M13 6l6 6-6 6" />
                 </Icon>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
-import { Button, Input } from "../components/ui";
+import { Button, PasswordInput } from "../components/ui";
+import { validatePassword } from "../utils/password";
 import { useAuth } from "../context/AuthContext.jsx";
 
 function ResetPasswordPage({ token, onNavigate }) {
@@ -17,8 +18,9 @@ function ResetPasswordPage({ token, onNavigate }) {
 
   const handleSubmit = async () => {
     if (!token) return;
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters long.");
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
     if (password !== confirmPassword) {
@@ -49,7 +51,7 @@ function ResetPasswordPage({ token, onNavigate }) {
           <p className="mt-1 text-sm text-[#6B7280]">Choose a new password for your EPR Nexuss account.</p>
         </div>
 
-        <div className="rounded-2xl border border-[#E5EAF0] bg-white p-6 shadow-sm">
+        <div className="animate-card-in rounded-2xl border border-[#E5EAF0] bg-white p-6 shadow-[0_20px_50px_rgba(15,23,42,0.08)]">
           {error && (
             <div className="mb-4 rounded-lg border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-sm text-[#991B1B]">
               {error}
@@ -69,21 +71,21 @@ function ResetPasswordPage({ token, onNavigate }) {
             </div>
           ) : (
             <div className="space-y-4">
-              <Input
+              <PasswordInput
                 label="New Password *"
-                type="password"
-                placeholder="At least 8 characters"
+                placeholder="8+ characters, 1 uppercase, 1 number, 1 symbol"
                 value={password}
+                showStrength
                 onChange={(event) => setPassword(event.target.value)}
               />
-              <Input
+              <PasswordInput
                 label="Confirm New Password *"
-                type="password"
                 placeholder="Re-enter your password"
                 value={confirmPassword}
+                error={confirmPassword && password !== confirmPassword ? "Passwords do not match." : ""}
                 onChange={(event) => setConfirmPassword(event.target.value)}
               />
-              <p className="text-xs text-[#6B7280]">Use at least 8 characters. Your reset link can only be used once and expires after 1 hour.</p>
+              <p className="text-xs text-[#6B7280]">Your reset link can only be used once and expires after 1 hour.</p>
               <Button className="w-full" disabled={loading || !token} onClick={handleSubmit}>
                 {loading ? "Resetting..." : "Reset Password"}
               </Button>

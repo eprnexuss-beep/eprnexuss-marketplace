@@ -150,7 +150,11 @@ export function NotificationBell({ compact = false, onNavigate }) {
   );
 }
 
-export function AdminProfileMenu({ onNavigate, compact = false }) {
+// Shared, richer account dropdown used by both the buyer/seller header and
+// the admin header. Shows the avatar, full name + email, a role pill, quick
+// links, and a clearly separated logout action — instead of a single bare
+// "Logout" button floating under the name.
+function AccountMenu({ onNavigate, compact = false, roleLabel, dashboardPage = "home", profileSectionId = "profile", profileLabel = "My Profile" }) {
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -159,8 +163,15 @@ export function AdminProfileMenu({ onNavigate, compact = false }) {
     const handleOutside = (event) => {
       if (ref.current && !ref.current.contains(event.target)) setOpen(false);
     };
+    const handleKey = (event) => {
+      if (event.key === "Escape") setOpen(false);
+    };
     document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("keydown", handleKey);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -169,54 +180,121 @@ export function AdminProfileMenu({ onNavigate, compact = false }) {
     onNavigate?.("home");
   };
 
+  const initial = (user?.name || "U").slice(0, 1).toUpperCase();
+
   return (
     <div className="relative" ref={ref}>
-      <button type="button" onClick={() => setOpen((value) => !value)} aria-label="Account menu" className={`${compact ? "px-2" : "px-2.5"} py-1.5 rounded-lg hover:bg-[#F7F9FB] flex items-center gap-2`}>
-        <span className="w-8 h-8 rounded-full bg-[#EBF8EC] text-[#2E7D32] flex items-center justify-center text-xs font-bold">{(user?.name || "A").slice(0, 1).toUpperCase()}</span>
-        <span className="hidden sm:block text-sm font-semibold text-[#374151] max-w-28 truncate">{user?.name || "Admin"}</span>
-        <svg className="w-4 h-4 text-[#9CA3AF]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" /></svg>
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-label="Account menu"
+        aria-expanded={open}
+        className={`${compact ? "px-1.5" : "px-2"} flex max-w-52 items-center gap-2 rounded-full py-1 pr-2.5 transition-colors hover:bg-[#F7F9FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5AC361] ${open ? "bg-[#F7F9FB]" : ""}`}
+      >
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full brand-gradient text-xs font-bold text-white shadow-[0_2px_6px_rgba(47,163,68,0.35)]">
+          {initial}
+        </span>
+        <span className="hidden truncate text-sm font-semibold text-[#374151] sm:block">
+          {user?.name || "Account"}
+        </span>
+        <svg
+          className={`h-4 w-4 shrink-0 text-[#9CA3AF] transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+        </svg>
       </button>
+
       {open && (
-        <div className="absolute right-0 mt-2 w-44 bg-white border border-[#E5EAF0] rounded-xl shadow-xl z-[90] overflow-hidden p-2">
-          <button type="button" onClick={handleLogout} className="w-full py-2.5 text-[#991B1B] bg-[#FEF2F2] hover:bg-[#FEE2E2] rounded-lg text-sm font-semibold">Logout</button>
+        <div
+          role="menu"
+          className="animate-menu-in absolute right-0 z-[90] mt-2 w-64 overflow-hidden rounded-2xl border border-[#E5EAF0] bg-white shadow-[0_20px_50px_rgba(16,24,40,0.16)]"
+        >
+          <div className="flex items-center gap-3 border-b border-[#F0F2F5] bg-[#FAFBFC] px-4 py-3.5">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full brand-gradient text-sm font-bold text-white shadow-[0_2px_8px_rgba(47,163,68,0.35)]">
+              {initial}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-[#101828]">{user?.name || "Account"}</p>
+              <p className="truncate text-xs text-[#98A2B3]">{user?.email || ""}</p>
+            </div>
+          </div>
+
+          {roleLabel && (
+            <div className="px-4 pt-3">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EBF8EC] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-[#2E7D32]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#2E7D32]" /> {roleLabel}
+              </span>
+            </div>
+          )}
+
+          <div className="p-2 pt-2.5">
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => { setOpen(false); onNavigate?.(dashboardPage); }}
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-[#344054] transition-colors hover:bg-[#F2F4F7]"
+            >
+              <svg className="h-4 w-4 text-[#667085]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h3.75A2.25 2.25 0 0112 6v3.75a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h3.75a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v3.75A2.25 2.25 0 0118 12h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+              </svg>
+              Dashboard
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => { setOpen(false); onNavigate?.("dashboard-section", profileSectionId); }}
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-[#344054] transition-colors hover:bg-[#F2F4F7]"
+            >
+              <svg className="h-4 w-4 text-[#667085]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+              </svg>
+              {profileLabel}
+            </button>
+          </div>
+
+          <div className="border-t border-[#F0F2F5] p-2">
+            <button
+              type="button"
+              role="menuitem"
+              onClick={handleLogout}
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-[#991B1B] transition-colors hover:bg-[#FEF2F2]"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+              </svg>
+              Log out
+            </button>
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-export function ProfileMenu({ onNavigate, compact = false }) {
-  const { user, logout } = useAuth();
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-
-  useEffect(() => {
-    const handleOutside = (event) => {
-      if (ref.current && !ref.current.contains(event.target)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
-  }, []);
-
-  const handleLogout = () => {
-    logout();
-    setOpen(false);
-    onNavigate?.("home");
-  };
-
+export function AdminProfileMenu({ onNavigate, compact = false }) {
   return (
-    <div className="relative" ref={ref}>
-      <button type="button" onClick={() => setOpen((value) => !value)} aria-label="Account menu" className={`${compact ? "px-2" : "px-2.5"} py-1.5 rounded-lg hover:bg-[#F7F9FB] transition-colors flex items-center gap-2 max-w-52`}>
-        <span className="w-7 h-7 rounded-full bg-[#EBF8EC] text-[#2E7D32] flex items-center justify-center text-xs font-bold">{(user?.name || "U").slice(0, 1).toUpperCase()}</span>
-        <span className="hidden sm:block text-sm font-semibold text-[#374151] truncate">{user?.name || "User"}</span>
-        <svg className="w-4 h-4 text-[#9CA3AF]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" /></svg>
-      </button>
-      {open && (
-        <div className="absolute right-0 mt-2 w-44 bg-white border border-[#E5EAF0] rounded-xl shadow-xl z-[80] overflow-hidden p-2">
-          <button type="button" onClick={handleLogout} className="w-full py-2.5 text-[#991B1B] bg-[#FEF2F2] hover:bg-[#FEE2E2] rounded-lg text-sm font-semibold">Logout</button>
-        </div>
-      )}
-    </div>
+    <AccountMenu
+      onNavigate={onNavigate}
+      compact={compact}
+      roleLabel="Admin"
+      dashboardPage="admin-dashboard"
+    />
+  );
+}
+
+export function ProfileMenu({ onNavigate, compact = false }) {
+  const { user } = useAuth();
+  return (
+    <AccountMenu
+      onNavigate={onNavigate}
+      compact={compact}
+      roleLabel={user?.role}
+      dashboardPage={user?.role === "seller" ? "seller-dashboard" : "buyer-dashboard"}
+    />
   );
 }
 

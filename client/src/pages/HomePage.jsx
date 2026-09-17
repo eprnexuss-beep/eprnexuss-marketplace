@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext.jsx";
-import { Badge, Button, CreditTypeIcon } from "../components/ui";
+import { Badge, Button, CreditTypeAvatar } from "../components/ui";
 import api from "../services/api.js";
 
 import VerificationStatusBanner from "../components/VerificationStatusBanner.jsx";
@@ -86,15 +86,13 @@ function CreditCard({ listing, onNavigate, index }) {
 
   return (
     <article
-      className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_8px_30px_rgba(15,25,35,0.04)] transition-all duration-300 hover:-translate-y-1 hover:border-[#9bd6a0] hover:shadow-[0_18px_45px_rgba(15,25,35,0.09)]"
-      style={{ animationDelay: `${index * 60}ms` }}
+      className="animate-card-in group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_8px_30px_rgba(15,25,35,0.04)] transition-all duration-300 hover:-translate-y-1 hover:border-[#9bd6a0] hover:shadow-[0_18px_45px_rgba(15,25,35,0.09)]"
+      style={{ animationDelay: `${Math.min(index, 10) * 60}ms` }}
     >
       <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-[#5AC361] via-[#91dd97] to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[#edf9ee] text-[#3fa64a] ring-1 ring-[#d4efd6]">
-            <CreditTypeIcon type={listing.category} />
-          </div>
+          <CreditTypeAvatar type={listing.category} className="group-hover:scale-105" />
           <Badge label="Verified" />
         </div>
         <span className="rounded-full bg-slate-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
