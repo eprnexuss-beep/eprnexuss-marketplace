@@ -15,6 +15,27 @@ const sellerListingSchema = new mongoose.Schema(
       trim: true,
     },
 
+    // Stream-specific classification. The classification type/value pair keeps
+    // Plastic, E-Waste, Battery, Tyre, Used Oil and ELV extensible without
+    // forcing every EPR stream into the same numbered category system.
+    classificationType: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    classification: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    classificationCode: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
     totalQuantity: {
       type: Number,
       required: false,

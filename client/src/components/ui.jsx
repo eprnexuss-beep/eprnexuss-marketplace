@@ -852,6 +852,12 @@ function PromptModal({
   );
 }
 
+function EprCreditLabel({ category, classification, classificationCode, className = "" }) {
+  const parts = [category, classification, classificationCode].filter(Boolean);
+  if (!parts.length) return null;
+  return <span className={className}>{parts.join(" · ")}</span>;
+}
+
 function EmptyState({ title, desc, action }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 px-4 py-16 text-center">
@@ -888,6 +894,7 @@ export {
   ConfidentialityBanner,
   CreditTypeAvatar,
   CreditTypeIcon,
+  EprCreditLabel,
   EmptyState,
   Input,
   PageHeader,

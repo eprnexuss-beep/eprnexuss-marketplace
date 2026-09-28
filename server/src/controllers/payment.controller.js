@@ -29,7 +29,7 @@ const getDealForUser = async (dealId, user) => {
   return Deal.findOne(query)
     .populate("buyerId", "name company email phone")
     .populate("sellerId", "name company email phone")
-    .populate("listingId", "category location complianceYear validTill price")
+    .populate("listingId", "category classificationType classification classificationCode location complianceYear validTill price")
     .lean();
 };
 

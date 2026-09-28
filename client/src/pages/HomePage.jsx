@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext.jsx";
-import { Badge, Button, CreditTypeAvatar } from "../components/ui";
+import { Badge, Button, CreditTypeAvatar, EprCreditLabel } from "../components/ui";
 import api from "../services/api.js";
 
 import VerificationStatusBanner from "../components/VerificationStatusBanner.jsx";
@@ -104,6 +104,15 @@ function CreditCard({ listing, onNavigate, index }) {
         <h3 className="text-[17px] font-semibold text-[#0F1923]">
           {listing.category || "EPR Credit"} EPR Credits
         </h3>
+        {listing.classification && (
+          <p className="mt-1 text-xs font-semibold text-slate-500">
+            <EprCreditLabel
+              category=""
+              classification={listing.classification}
+              classificationCode={listing.classificationCode}
+            />
+          </p>
+        )}
         <div className="mt-2 flex items-end gap-1.5">
           <span className="text-2xl font-bold tracking-tight text-[#3fa64a]">
             ₹{price.toLocaleString("en-IN")}

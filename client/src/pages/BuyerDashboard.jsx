@@ -2,6 +2,7 @@ import { toast } from "react-toastify";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { CREDIT_TYPES } from "../data/mock";
+import { getEprTaxonomy } from "../data/eprTaxonomy.js";
 import api from "../services/api.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import {
@@ -22,6 +23,7 @@ import {
   Input,
   Select,
   Textarea,
+  EprCreditLabel,
 } from "../components/ui";
 import { MessageChat } from "../components/MessageCenter.jsx";
 import { QuotationCard } from "../components/QuotationCenter.jsx";
@@ -593,6 +595,9 @@ function PostRequirementModal({ onClose, onCreated }) {
   const [done, setDone] = useState(false);
   const [form, setForm] = useState({
     type: "",
+    classificationType: "",
+    classification: "",
+    classificationCode: "",
     qty: "",
     budget: "",
     location: "",
@@ -672,8 +677,22 @@ function PostRequirementModal({ onClose, onCreated }) {
             options={CREDIT_TYPES.map((t) => ({ label: t, value: t }))}
             placeholder="Select credit type"
             value={form.type}
-            onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
+            onChange={(e) => {
+              const next = e.target.value;
+              const taxonomy = getEprTaxonomy(next);
+              setForm((f) => ({ ...f, type: next, classificationType: taxonomy?.classificationType || "", classification: "", classificationCode: "" }));
+            }}
           />
+          {form.type && getEprTaxonomy(form.type) && (<>
+            <Select
+              label={`${getEprTaxonomy(form.type).classificationLabel} *`}
+              options={getEprTaxonomy(form.type).options}
+              placeholder="Select classification"
+              value={form.classification}
+              onChange={(e) => setForm((f) => ({ ...f, classification: e.target.value }))}
+            />
+            {form.type === "E-Waste" && <Input label="EEE Item Code *" placeholder="e.g. ITEW3" value={form.classificationCode} onChange={(e) => setForm((f) => ({ ...f, classificationCode: e.target.value.toUpperCase() }))} />}
+          </>)}
           <div className="grid grid-cols-2 gap-4">
             <Input
               label="Required Quantity (MT) *"
@@ -736,6 +755,12 @@ function PostRequirementModal({ onClose, onCreated }) {
                   return;
                 }
 
+                const taxonomy = getEprTaxonomy(form.type);
+                if (!taxonomy || !form.classification || !taxonomy.options.some((option) => option.value === form.classification) || (form.type === "E-Waste" && !form.classificationCode.trim())) {
+                  setError("Please select the required classification for this credit type.");
+                  return;
+                }
+
                 if (!form.qty || Number(form.qty) <= 0) {
                   setError("Please enter a valid required quantity.");
                   return;
@@ -757,6 +782,9 @@ function PostRequirementModal({ onClose, onCreated }) {
 
                   const response = await api.post("/requirements", {
                     type: form.type,
+                    classificationType: taxonomy.classificationType,
+                    classification: form.classification,
+                    classificationCode: form.classificationCode.trim().toUpperCase(),
                     quantity: Number(form.qty),
                     budget: Number(form.budget),
                     location:
@@ -770,6 +798,9 @@ function PostRequirementModal({ onClose, onCreated }) {
                     setDone(true);
                     setForm({
                       type: "",
+                      classificationType: "",
+                      classification: "",
+                      classificationCode: "",
                       qty: "",
                       budget: "",
                       location: "",
@@ -1157,6 +1188,11 @@ function BuyerDashboard({ onNavigate }) {
                 <h3 className="mt-1 font-heading text-xl font-bold text-[#101828]">
                   {selectedRequirement?.type || "EPR Credit"} requirement
                 </h3>
+                {selectedRequirement?.classification && (
+                  <p className="mt-1 text-xs font-semibold text-[#667085]">
+                    <EprCreditLabel category="" classification={selectedRequirement.classification} classificationCode={selectedRequirement.classificationCode} />
+                  </p>
+                )}
                 <p className="mt-1 text-sm text-[#667085]">
                   {Number(
                     selectedRequirement?.remainingQuantity ||
@@ -1208,9 +1244,16 @@ function BuyerDashboard({ onNavigate }) {
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <h4 className="font-heading font-semibold text-[#101828]">
-                              {match.category}
-                            </h4>
+                            <div>
+                              <h4 className="font-heading font-semibold text-[#101828]">
+                                {match.category}
+                              </h4>
+                              {match.classification && (
+                                <p className="mt-0.5 text-xs font-semibold text-[#667085]">
+                                  <EprCreditLabel category="" classification={match.classification} classificationCode={match.classificationCode} />
+                                </p>
+                              )}
+                            </div>
                             <Badge
                               label={`${match.matchScore}% Match`}
                               variant="matched"
@@ -1739,9 +1782,16 @@ function BuyerDashboard({ onNavigate }) {
                       >
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-sm font-semibold text-[#374151]">
-                              {requirement.type || "EPR Credit"}
-                            </p>
+                            <div>
+                              <p className="text-sm font-semibold text-[#374151]">
+                                {requirement.type || "EPR Credit"}
+                              </p>
+                              {requirement.classification && (
+                                <p className="mt-0.5 text-xs font-semibold text-[#667085]">
+                                  <EprCreditLabel category="" classification={requirement.classification} classificationCode={requirement.classificationCode} />
+                                </p>
+                              )}
+                            </div>
                             <Badge label={requirement.status} />
                           </div>
                           <p className="text-xs text-[#9CA3AF] mt-1">
@@ -1812,9 +1862,16 @@ function BuyerDashboard({ onNavigate }) {
                       >
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-sm font-semibold text-[#374151]">
-                              {deal.listing?.category || "EPR Credit"}
-                            </p>
+                            <div>
+                              <p className="text-sm font-semibold text-[#374151]">
+                                {deal.listing?.category || "EPR Credit"}
+                              </p>
+                              {deal.listing?.classification && (
+                                <p className="mt-0.5 text-xs font-semibold text-[#667085]">
+                                  <EprCreditLabel category="" classification={deal.listing.classification} classificationCode={deal.listing.classificationCode} />
+                                </p>
+                              )}
+                            </div>
                             <Badge label={deal.status} />
                           </div>
                           <p className="text-xs text-[#9CA3AF] mt-1">
@@ -1912,7 +1969,14 @@ function BuyerDashboard({ onNavigate }) {
                 {buyerRequirements.map((requirement) => (
                   <Tr key={requirement._id}>
                     <Td>
-                      <span className="font-medium">{requirement.type}</span>
+                      <div>
+                        <span className="font-medium">{requirement.type}</span>
+                        {requirement.classification && (
+                          <span className="mt-0.5 block text-xs text-[#667085]">
+                            <EprCreditLabel category="" classification={requirement.classification} classificationCode={requirement.classificationCode} />
+                          </span>
+                        )}
+                      </div>
                     </Td>
                     <Td>
                       {Number(requirement.quantity || 0).toLocaleString(
@@ -2033,9 +2097,16 @@ function BuyerDashboard({ onNavigate }) {
                           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                             <div className="min-w-0">
                               <div className="flex flex-wrap items-center gap-2">
-                                <h4 className="font-heading font-semibold text-[#101828]">
-                                  {requirement.type || "EPR Credit"}
-                                </h4>
+                                <div>
+                                  <h4 className="font-heading font-semibold text-[#101828]">
+                                    {requirement.type || "EPR Credit"}
+                                  </h4>
+                                  {requirement.classification && (
+                                    <p className="mt-0.5 text-xs font-semibold text-[#667085]">
+                                      <EprCreditLabel category="" classification={requirement.classification} classificationCode={requirement.classificationCode} />
+                                    </p>
+                                  )}
+                                </div>
                                 <Badge label={requirement.status} />
                               </div>
                               <p className="mt-1 text-sm text-[#667085]">
@@ -2364,11 +2435,18 @@ function BuyerDashboard({ onNavigate }) {
                           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-2">
-                                <h3 className="font-heading text-base font-semibold text-[#101828]">
-                                  {request.listing?.category ||
-                                    request.type ||
-                                    "EPR Credit"}
-                                </h3>
+                                <div>
+                                  <h3 className="font-heading text-base font-semibold text-[#101828]">
+                                    {request.listing?.category ||
+                                      request.type ||
+                                      "EPR Credit"}
+                                  </h3>
+                                  {request.listing?.classification && (
+                                    <p className="mt-0.5 text-xs font-semibold text-[#667085]">
+                                      <EprCreditLabel category="" classification={request.listing.classification} classificationCode={request.listing.classificationCode} />
+                                    </p>
+                                  )}
+                                </div>
                                 <span
                                   className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${requestCompleted ? "bg-[#F2F4F7] text-[#667085]" : accepted ? "bg-[#EBF8EC] text-[#26702B]" : expired ? "bg-[#FEF3F2] text-[#B42318]" : "bg-[#FFF7E8] text-[#B54708]"}`}
                                 >
@@ -2640,6 +2718,11 @@ function BuyerDashboard({ onNavigate }) {
                           <span className="min-w-0">
                             <span className="block truncate font-heading text-sm font-bold text-[#101828]">
                               {listing.category} EPR Credits
+                              {listing.classification && (
+                                <span className="mt-0.5 block text-xs font-normal text-[#667085]">
+                                  <EprCreditLabel category="" classification={listing.classification} classificationCode={listing.classificationCode} />
+                                </span>
+                              )}
                             </span>
                             <span className="mt-1 block truncate text-xs text-[#667085]">
                               {listing.sellerId?.company ||
@@ -2759,6 +2842,11 @@ function BuyerDashboard({ onNavigate }) {
                           <p className="font-semibold text-[#0F1923]">
                             {request.listing?.category || "Credit request"}
                           </p>
+                          {request.listing?.classification && (
+                            <p className="mt-0.5 text-xs text-[#667085]">
+                              <EprCreditLabel category="" classification={request.listing.classification} classificationCode={request.listing.classificationCode} />
+                            </p>
+                          )}
                           {unread > 0 && (
                             <span
                               className="w-2 h-2 rounded-full bg-[#EF4444]"

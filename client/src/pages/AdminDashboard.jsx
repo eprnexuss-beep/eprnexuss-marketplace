@@ -22,6 +22,7 @@ import {
   Td,
   Textarea,
   PromptModal,
+  EprCreditLabel,
 } from "../components/ui";
 const downloadDocument = async (documentId, fileName = "document") => {
   try {
@@ -265,6 +266,15 @@ function getCertificateVerification(listing) {
     !document.certificateComplianceYear ||
     document.certificateComplianceYear.trim() ===
       String(listing.complianceYear || "").trim();
+  const classificationMatches =
+    !document.certificateClassification ||
+    document.certificateClassification.trim().toLowerCase() ===
+      String(listing.classification || "").trim().toLowerCase();
+  const classificationCodeMatches =
+    listing.category !== "E-Waste" ||
+    !document.certificateClassificationCode ||
+    document.certificateClassificationCode.trim().toUpperCase() ===
+      String(listing.classificationCode || "").trim().toUpperCase();
   const quantityCovers =
     document.certificateQuantity == null ||
     Number(document.certificateQuantity) >= Number(listing.quantity || 0);
@@ -283,12 +293,16 @@ function getCertificateVerification(listing) {
     complete:
       metadataComplete &&
       categoryMatches &&
+      classificationMatches &&
+      classificationCodeMatches &&
       yearMatches &&
       quantityCovers &&
       validityCovers,
     checks: [
       ["Certificate ID", Boolean(document.certificateNumber?.trim())],
       ["Category", categoryMatches],
+      ["Classification", classificationMatches],
+      ...(listing.category === "E-Waste" ? [["EEE item code", classificationCodeMatches]] : []),
       ["Compliance year", yearMatches],
       ["Quantity covers listing", quantityCovers],
       ["Validity covers listing", validityCovers],
@@ -635,7 +649,7 @@ function ListingApprovalMarginModal({ prompt, onCancel, onConfirm }) {
               <div>
                 <p className="text-xs text-[#98A2B3]">Seller listing</p>
                 <p className="font-semibold text-[#0F1923]">
-                  {listing?.category || "EPR Credit"} · {listing?.quantity || 0} MT
+                  {listing?.category || "EPR Credit"}{listing?.classification ? ` · ${listing.classification}` : ""}{listing?.classificationCode ? ` · ${listing.classificationCode}` : ""} · {listing?.quantity || 0} MT
                 </p>
               </div>
               <div className="text-right">
@@ -1439,7 +1453,16 @@ function AdminDashboard({ onNavigate }) {
                         request.listingId?.sellerId?.name ||
                         "—"}
                     </Td>
-                    <Td>{request.listingId?.category || "—"}</Td>
+                    <Td>
+                      <div>
+                        <div className="font-medium">{request.listingId?.category || "—"}</div>
+                        {request.listingId?.classification && (
+                          <div className="text-xs text-[#667085]">
+                            <EprCreditLabel category="" classification={request.listingId.classification} classificationCode={request.listingId.classificationCode} />
+                          </div>
+                        )}
+                      </div>
+                    </Td>
                     <Td>{request.quantity}</Td>
                     <Td>₹{request.listingId?.price ?? "—"}</Td>
                     <Td>
@@ -1525,6 +1548,15 @@ function AdminDashboard({ onNavigate }) {
                           >
                             {listing.category}
                           </h3>
+                          {listing.classification && (
+                            <span className="text-xs font-semibold text-[#667085]">
+                              <EprCreditLabel
+                                category=""
+                                classification={listing.classification}
+                                classificationCode={listing.classificationCode}
+                              />
+                            </span>
+                          )}
 
                           <Badge label="Pending Review" />
                         </div>
@@ -1803,6 +1835,11 @@ function AdminDashboard({ onNavigate }) {
                             <p className="font-medium text-[#374151]">
                               {listing?.category || "—"}
                             </p>
+                            {listing?.classification && (
+                              <p className="mt-1 text-xs text-[#667085]">
+                                <EprCreditLabel category="" classification={listing.classification} classificationCode={listing.classificationCode} />
+                              </p>
+                            )}
                           </div>
 
                           <div className="bg-[#F7F9FB] border border-[#E5EAF0] rounded-xl p-3">

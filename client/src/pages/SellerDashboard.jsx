@@ -15,6 +15,7 @@ import {
   Table,
   Tr,
   Td,
+  EprCreditLabel,
 } from "../components/ui";
 import { DealsSection } from "../components/DealsSection.jsx";
 import { DisputesPage } from "../components/DisputeCenter.jsx";
@@ -1145,6 +1146,11 @@ function SellerDashboard({ onNavigate }) {
                             <span className="font-semibold text-[#101828]">
                               {listing.category}
                             </span>
+                            {listing.classification && (
+                              <span className="mt-0.5 block text-xs text-[#667085]">
+                                <EprCreditLabel category="" classification={listing.classification} classificationCode={listing.classificationCode} />
+                              </span>
+                            )}
                           </Td>
                           <Td>
                             {listing.status === "active"
@@ -1229,6 +1235,11 @@ function SellerDashboard({ onNavigate }) {
                                 <p className="truncate text-sm font-semibold text-[#101828]">
                                   {deal.listing?.category || "EPR Credit Deal"}
                                 </p>
+                                {deal.listing?.classification && (
+                                  <p className="mt-0.5 text-xs text-[#667085]">
+                                    <EprCreditLabel category="" classification={deal.listing.classification} classificationCode={deal.listing.classificationCode} />
+                                  </p>
+                                )}
                                 <p className="mt-1 text-xs text-[#667085]">
                                   #{deal._id?.slice(-8)} ·{" "}
                                   {Number(deal.quantity || 0).toLocaleString(

@@ -503,7 +503,7 @@ const request = await PurchaseRequest.findById(requestId)
   .populate("buyerId", "name company email")
   .populate(
     "listingId",
-    "sellerId category quantity price location validTill",
+    "sellerId category classificationType classification classificationCode quantity price location validTill",
   );
 
 if (!request) {
@@ -776,12 +776,12 @@ const deals = await Deal.find()
 .populate("sellerId", "name company email")
 .populate(
 "listingId",
-"category quantity totalQuantity price publicMarkupRate publicMarginType publicMarginValue location complianceYear validTill reservedQuantity",
+"category classificationType classification classificationCode quantity totalQuantity price publicMarkupRate publicMarginType publicMarginValue location complianceYear validTill reservedQuantity",
 )
 .populate("requestId", "quantity status notes createdAt")
 .populate(
 "requirementId",
-"quantity matchedQuantity remainingQuantity status",
+"type classificationType classification classificationCode quantity matchedQuantity remainingQuantity status",
 )
 .sort({
 createdAt: -1,
@@ -1340,12 +1340,12 @@ sellerId: req.user._id,
 })
 .populate(
 "listingId",
-"category quantity price location complianceYear validTill reservedQuantity",
+"category classificationType classification classificationCode quantity price location complianceYear validTill reservedQuantity",
 )
 .populate("requestId", "quantity status notes createdAt")
 .populate(
 "requirementId",
-"quantity matchedQuantity remainingQuantity status",
+"type classificationType classification classificationCode quantity matchedQuantity remainingQuantity status",
 )
 .sort({
 createdAt: -1,
@@ -1361,6 +1361,8 @@ const sellerDeals = deals.map((deal) => ({
         _id: deal.listingId._id,
 
         category: deal.listingId.category,
+        classification: deal.listingId.classification,
+        classificationCode: deal.listingId.classificationCode,
 
         quantity: deal.listingId.quantity,
 
@@ -1444,11 +1446,11 @@ buyerId: req.user._id,
 })
 .populate(
 "listingId",
-"category quantity price location complianceYear validTill reservedQuantity",
+"category classificationType classification classificationCode quantity price location complianceYear validTill reservedQuantity",
 )
 .populate(
 "requirementId",
-"quantity matchedQuantity remainingQuantity status",
+"type classificationType classification classificationCode quantity matchedQuantity remainingQuantity status",
 )
 .sort({
 createdAt: -1,
@@ -1464,6 +1466,8 @@ const buyerDeals = deals.map((deal) => ({
         _id: deal.listingId._id,
 
         category: deal.listingId.category,
+        classification: deal.listingId.classification,
+        classificationCode: deal.listingId.classificationCode,
 
         quantity: deal.listingId.quantity,
 

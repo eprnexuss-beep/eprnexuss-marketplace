@@ -262,7 +262,7 @@ export const getAdminPurchaseRequests = async (req, res) => {
       .populate({
         path: "listingId",
         select:
-          "category quantity totalQuantity price publicMarkupRate publicMarginType publicMarginValue location complianceYear validTill reservedQuantity sellerId",
+          "category classificationType classification classificationCode quantity totalQuantity price publicMarkupRate publicMarginType publicMarginValue location complianceYear validTill reservedQuantity sellerId",
         populate: {
           path: "sellerId",
           select: "name company email phone",
@@ -1128,7 +1128,7 @@ export const getSellerPurchaseRequests = async (req, res) => {
         path: "listingId",
         match: { sellerId: req.user._id },
         select:
-          "category quantity totalQuantity price location complianceYear validTill reservedQuantity sellerId",
+          "category classificationType classification classificationCode quantity totalQuantity price location complianceYear validTill reservedQuantity sellerId",
       })
       .sort({ createdAt: -1 })
       .lean();
@@ -1141,6 +1141,9 @@ export const getSellerPurchaseRequests = async (req, res) => {
         listing: {
           _id: request.listingId._id,
           category: request.listingId.category,
+          classificationType: request.listingId.classificationType,
+          classification: request.listingId.classification,
+          classificationCode: request.listingId.classificationCode,
           price: request.listingId.price,
           quantityAvailable: request.listingId.quantity,
           reservedQuantity: request.listingId.reservedQuantity || 0,
@@ -1177,7 +1180,7 @@ export const getBuyerPurchaseRequests = async (req, res) => {
       .populate({
         path: "listingId",
         select:
-          "category quantity totalQuantity price publicMarkupRate publicMarginType publicMarginValue location complianceYear validTill reservedQuantity",
+          "category classificationType classification classificationCode quantity totalQuantity price publicMarkupRate publicMarginType publicMarginValue location complianceYear validTill reservedQuantity",
       })
       .sort({ createdAt: -1 })
       .lean();
@@ -1188,6 +1191,9 @@ export const getBuyerPurchaseRequests = async (req, res) => {
         ? {
             _id: request.listingId._id,
             category: request.listingId.category,
+            classificationType: request.listingId.classificationType,
+            classification: request.listingId.classification,
+            classificationCode: request.listingId.classificationCode,
             quantity: request.listingId.quantity,
             totalQuantity:
               request.listingId.totalQuantity ?? request.listingId.quantity,

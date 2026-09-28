@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { INDIAN_LOCATIONS } from "../constants/indianStates.js";
 
 import { CREDIT_TYPES } from "../data/mock";
+import { getEprTaxonomy } from "../data/eprTaxonomy.js";
 import { Button, Input, Select, Textarea, Badge } from "../components/ui";
 
 import api from "../services/api.js";
@@ -21,6 +22,9 @@ function AddListingPage({ onNavigate }) {
         const draft = JSON.parse(raw);
         return {
           type: draft.type || "",
+          classificationType: draft.classificationType || "",
+          classification: draft.classification || "",
+          classificationCode: draft.classificationCode || "",
           quantity: draft.quantity ?? "",
           price: draft.price ?? "",
           location: draft.location || "",
@@ -39,6 +43,9 @@ function AddListingPage({ onNavigate }) {
     }
     return {
       type: "",
+      classificationType: "",
+      classification: "",
+      classificationCode: "",
       quantity: "",
       price: "",
       location: "",
@@ -102,6 +109,18 @@ function AddListingPage({ onNavigate }) {
 
     if (!form.type) {
       toast.error("Please select a credit type.");
+      setStep(0);
+      return;
+    }
+
+    const taxonomy = getEprTaxonomy(form.type);
+    if (!taxonomy || !form.classification || !taxonomy.options.some((option) => option.value === form.classification)) {
+      toast.error("Please select the correct classification for this credit type.");
+      setStep(0);
+      return;
+    }
+    if (form.type === "E-Waste" && !form.classificationCode.trim()) {
+      toast.error("Please enter the CPCB EEE item code for E-Waste.");
       setStep(0);
       return;
     }
@@ -188,6 +207,9 @@ function AddListingPage({ onNavigate }) {
       const formData = new FormData();
 
       formData.append("category", form.type);
+      formData.append("classificationType", taxonomy.classificationType);
+      formData.append("classification", form.classification);
+      formData.append("classificationCode", form.classificationCode.trim().toUpperCase());
       formData.append("quantity", form.quantity);
       formData.append("price", form.price);
       formData.append("location", form.location);
@@ -383,10 +405,37 @@ function AddListingPage({ onNavigate }) {
                 options={CREDIT_TYPES.map((t) => ({ label: t, value: t }))}
                 placeholder="Select credit type"
                 value={form.type}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, type: e.target.value }))
-                }
+                onChange={(e) => {
+                  const next = e.target.value;
+                  const taxonomy = getEprTaxonomy(next);
+                  setForm((f) => ({
+                    ...f,
+                    type: next,
+                    classificationType: taxonomy?.classificationType || "",
+                    classification: "",
+                    classificationCode: "",
+                  }));
+                }}
               />
+              {form.type && getEprTaxonomy(form.type) && (
+                <>
+                  <Select
+                    label={`${getEprTaxonomy(form.type).classificationLabel} *`}
+                    options={getEprTaxonomy(form.type).options}
+                    placeholder="Select classification"
+                    value={form.classification}
+                    onChange={(e) => setForm((f) => ({ ...f, classification: e.target.value }))}
+                  />
+                  {form.type === "E-Waste" && (
+                    <Input
+                      label="EEE Item Code *"
+                      placeholder="e.g. ITEW3"
+                      value={form.classificationCode}
+                      onChange={(e) => setForm((f) => ({ ...f, classificationCode: e.target.value.toUpperCase() }))}
+                    />
+                  )}
+                </>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   label="Available Quantity (MT) *"
@@ -650,7 +699,17 @@ function AddListingPage({ onNavigate }) {
               </h3>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: "Credit Type", value: form.type || "Not set" },
+                  {
+                    label: "Credit Type",
+                    value: form.type || "Not set",
+                  },
+                  {
+                    label: getEprTaxonomy(form.type)?.classificationLabel || "Credit Category",
+                    value: form.classification || "Not set",
+                  },
+                  ...(form.type === "E-Waste"
+                    ? [{ label: "EEE Item Code", value: form.classificationCode || "Not set" }]
+                    : []),
                   {
                     label: "Quantity",
                     value: form.quantity ? `${form.quantity} MT` : "Not set",

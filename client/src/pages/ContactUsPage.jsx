@@ -3,7 +3,7 @@ import React from "react";
 const CONTACTS = {
   email: "info@eprnexuss.com",
   alternateEmail: "eprnexuss@gmail.com",
-  mobile: "+91 9286595966",
+  mobile: "+91 9220386699",
   landline: "0120-4605014",
   address:
     "H-73, No.107, Sector-63, Noida, Dist. Gautam Buddha Nagar, U.P. 201301",
@@ -123,7 +123,7 @@ export default function ContactUsPage({ onNavigate }) {
             title={CONTACTS.mobile}
             action={
               <a
-                href="tel:+919286595966"
+                href="tel:+919220386699"
                 className="inline-flex items-center gap-2 rounded-lg bg-[#35B94C] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#2D9F41]"
               >
                 <Icon type="phone" /> Call for instant solution
@@ -131,7 +131,7 @@ export default function ContactUsPage({ onNavigate }) {
             }
           >
             <a
-              href="tel:+919286595966"
+              href="tel:+919220386699"
               className="font-medium text-[#344054] hover:text-[#25863A]"
             >
               {CONTACTS.mobile}
@@ -177,7 +177,7 @@ export default function ContactUsPage({ onNavigate }) {
           </p>
           <div className="mt-6 grid gap-3">
             <a
-              href="tel:+919286595966"
+              href="tel:+919220386699"
               className="flex items-center justify-center gap-2 rounded-xl bg-[#35B94C] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#2D9F41]"
             >
               Call us for instant solution

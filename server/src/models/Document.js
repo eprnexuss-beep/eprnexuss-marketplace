@@ -78,6 +78,24 @@ const documentSchema = new mongoose.Schema(
       default: "",
     },
 
+    certificateClassificationType: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    certificateClassification: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    certificateClassificationCode: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
     certificateComplianceYear: {
       type: String,
       trim: true,

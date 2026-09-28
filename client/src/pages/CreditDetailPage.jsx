@@ -563,6 +563,11 @@ function CreditDetailPage({ creditId, onNavigate }) {
                       <h1 className="mt-2 font-heading text-2xl font-bold tracking-[-0.02em] text-[#101828] sm:text-3xl">
                         {credit.category} EPR Credits
                       </h1>
+                      {credit.classification && (
+                        <p className="mt-1 text-sm font-semibold text-[#475467]">
+                          {credit.classification}{credit.classificationCode ? ` · ${credit.classificationCode}` : ""}
+                        </p>
+                      )}
                       <p className="mt-1.5 text-sm text-[#667085]">
                         Compliance year {credit.complianceYear || "—"} · Listed{" "}
                         {formattedListedOn}
@@ -893,6 +898,7 @@ function SimilarCredits({ currentListing, onNavigate }) {
               <p className="mt-4 font-heading text-sm font-bold text-[#101828]">
                 {listing.category} EPR Credits
               </p>
+              {listing.classification && <p className="text-xs font-semibold text-[#667085]">{listing.classification}{listing.classificationCode ? ` · ${listing.classificationCode}` : ""}</p>}
               <p className="mt-1 text-xs text-[#667085]">
                 {listing.location || "Location not specified"} · FY{" "}
                 {listing.complianceYear || "—"}

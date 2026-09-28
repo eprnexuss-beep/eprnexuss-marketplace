@@ -1,7 +1,8 @@
 import { toast } from "react-toastify";
 import { useEffect, useMemo, useState } from "react";
 import { CREDIT_TYPES } from "../data/mock";
-import { Badge, CreditTypeAvatar } from "../components/ui";
+import { getEprTaxonomy } from "../data/eprTaxonomy.js";
+import { Badge, CreditTypeAvatar, EprCreditLabel } from "../components/ui";
 import api from "../services/api.js";
 import { useAuth } from "../context/AuthContext.jsx";
 
@@ -68,7 +69,7 @@ function MarketplacePage({ onNavigate }) {
   const [error, setError] = useState("");
   const [watchlistIds, setWatchlistIds] = useState(new Set());
   const [watchlistBusyId, setWatchlistBusyId] = useState("");
-  const [filters, setFilters] = useState({ type: "", location: "", year: "" });
+  const [filters, setFilters] = useState({ type: "", classification: "", classificationCode: "", location: "", year: "" });
   const [sort, setSort] = useState("price-asc");
   const [page, setPage] = useState(1);
   const PER_PAGE = 8;
@@ -162,6 +163,8 @@ function MarketplacePage({ onNavigate }) {
       )
         return false;
       if (filters.type && listing.category !== filters.type) return false;
+      if (filters.classification && listing.classification !== filters.classification) return false;
+      if (filters.classificationCode && listing.classificationCode !== filters.classificationCode) return false;
       if (filters.location && listing.location !== filters.location)
         return false;
       if (filters.year && listing.complianceYear !== filters.year) return false;
@@ -179,6 +182,8 @@ function MarketplacePage({ onNavigate }) {
   const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
   const activeFilterCount = [
     filters.type,
+    filters.classification,
+    filters.classificationCode,
     filters.location,
     filters.year,
   ].filter(Boolean).length;
@@ -189,7 +194,7 @@ function MarketplacePage({ onNavigate }) {
   };
 
   const clearFilters = () => {
-    setFilters({ type: "", location: "", year: "" });
+    setFilters({ type: "", classification: "", classificationCode: "", location: "", year: "" });
     setPage(1);
   };
 
@@ -231,12 +236,12 @@ function MarketplacePage({ onNavigate }) {
 
       <main className="mx-auto max-w-7xl px-4 pb-12 sm:px-6">
         <section className="relative -mt-5 rounded-2xl border border-[#E5EAF0] bg-white p-3 shadow-[0_16px_45px_rgba(16,24,40,0.10)] sm:p-4">
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-[1.2fr_1fr_1fr_1fr_auto] lg:items-end">
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4 lg:items-end">
             <FilterSelect
               icon="layers"
               label="Credit type"
               value={filters.type}
-              onChange={(e) => setFilter("type", e.target.value)}
+              onChange={(e) => { setFilters((current) => ({ ...current, type: e.target.value, classification: "", classificationCode: "" })); setPage(1); }}
             >
               <option value="">All credit types</option>
               {marketplaceCreditTypes.map((type) => (
@@ -245,6 +250,25 @@ function MarketplacePage({ onNavigate }) {
                 </option>
               ))}
             </FilterSelect>
+            {filters.type && getEprTaxonomy(filters.type) && (
+              <FilterSelect
+                icon="layers"
+                label={getEprTaxonomy(filters.type).classificationLabel}
+                value={filters.classification}
+                onChange={(e) => { setFilter("classification", e.target.value); setFilters((current) => ({ ...current, classificationCode: "" })); }}
+              >
+                <option value="">All classifications</option>
+                {getEprTaxonomy(filters.type).options.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </FilterSelect>
+            )}
+            {filters.type === "E-Waste" && filters.classification && (
+              <FilterSelect icon="layers" label="EEE Item Code" value={filters.classificationCode} onChange={(e) => setFilter("classificationCode", e.target.value)}>
+                <option value="">All item codes</option>
+                {Array.from(new Set(listings.filter((item) => item.category === "E-Waste" && (!filters.classification || item.classification === filters.classification)).map((item) => item.classificationCode).filter(Boolean))).map((code) => <option key={code} value={code}>{code}</option>)}
+              </FilterSelect>
+            )}
             <FilterSelect
               icon="map"
               label="Location"
@@ -530,6 +554,15 @@ function ListingCard({
         <h3 className="font-heading truncate text-[17px] font-bold tracking-[-0.015em] text-[#101828]">
           {credit.category} EPR Credits
         </h3>
+        {credit.classification && (
+          <p className="mt-1 text-xs font-semibold text-[#667085]">
+            <EprCreditLabel
+              category=""
+              classification={credit.classification}
+              classificationCode={credit.classificationCode}
+            />
+          </p>
+        )}
         <div className="mt-2 flex items-end gap-1.5">
           <span className="font-heading text-2xl font-bold tracking-tight text-[#2E7D32]">
             ₹{credit.price}

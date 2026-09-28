@@ -3,6 +3,7 @@ import BuyerRequirement from "../models/BuyerRequirement.js";
 import SellerListing from "../models/SellerListing.js";
 import { createActivityLog } from "../services/activityLog.service.js";
 import { notifyMatchesForRequirement } from "../services/matching.service.js";
+import { getEprTaxonomy, validateEeeItemCode } from "../config/eprTaxonomy.js";
 
 const publicPrice = (listing) => {
   const base = Number(listing?.price || 0);
@@ -43,7 +44,7 @@ const categoryMap = {
  */
 export const createRequirement = async (req, res) => {
   try {
-    const { type, quantity, budget, location, complianceYear, notes } =
+    const { type, classificationType, classification, classificationCode, quantity, budget, location, complianceYear, notes } =
       req.body || {};
 
     const normalizedType = categoryMap[type?.trim().toLowerCase()];
@@ -52,8 +53,15 @@ export const createRequirement = async (req, res) => {
       return res.status(400).json({
         success: false,
         message:
-          "Invalid credit type. Allowed types: Plastic, Battery, Used Oil",
+          "Invalid credit type. Allowed types: Plastic, Battery, E-Waste, ELV, Used Oil, Tyre",
       });
+    }
+
+    const taxonomy = getEprTaxonomy(normalizedType);
+    const normalizedClassification = String(classification || "").trim();
+    const normalizedClassificationCode = String(classificationCode || "").trim().toUpperCase();
+    if (!taxonomy || !normalizedClassification || !taxonomy.options.includes(normalizedClassification) || String(classificationType || "").trim() !== taxonomy.classificationType || (normalizedType === "E-Waste" && !validateEeeItemCode(normalizedClassificationCode, normalizedClassification))) {
+      return res.status(400).json({ success: false, message: "A valid EPR classification is required for this credit type" });
     }
 
     if (req.user.role !== "buyer") {
@@ -97,6 +105,9 @@ export const createRequirement = async (req, res) => {
     const requirement = await BuyerRequirement.create({
       buyerId: req.user._id,
       type: normalizedType,
+      classificationType: taxonomy.classificationType,
+      classification: normalizedClassification,
+      classificationCode: normalizedClassificationCode,
       quantity: parsedQuantity,
       budget: parsedBudget,
       location: location?.trim() || "",
@@ -178,7 +189,7 @@ export const getAdminRequirements = async (req, res) => {
       .populate({
         path: "matchedListings.listingId",
         select:
-          "sellerId category totalQuantity quantity reservedQuantity price publicMarkupRate publicMarginType publicMarginValue location complianceYear validTill status",
+          "sellerId category classificationType classification classificationCode totalQuantity quantity reservedQuantity price publicMarkupRate publicMarginType publicMarginValue location complianceYear validTill status",
         populate: {
           path: "sellerId",
           select: "name company email verifiedBadge",

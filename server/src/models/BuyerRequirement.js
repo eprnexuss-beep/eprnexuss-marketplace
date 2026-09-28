@@ -39,6 +39,24 @@ const buyerRequirementSchema = new mongoose.Schema(
       trim: true,
     },
 
+    classificationType: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    classification: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    classificationCode: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
     quantity: {
       type: Number,
       required: [true, "Required quantity is required"],

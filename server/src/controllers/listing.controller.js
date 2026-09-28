@@ -4,6 +4,7 @@ import Document from "../models/Document.js";
 import { createActivityLog } from "../services/activityLog.service.js";
 import { createNotifications } from "../services/notification.service.js";
 import { notifyMatchesForListing } from "../services/matching.service.js";
+import { getEprTaxonomy, validateEeeItemCode } from "../config/eprTaxonomy.js";
 
 /*
 
@@ -66,6 +67,9 @@ export const createListing = async (req, res) => {
 try {
 const {
 category,
+classificationType,
+classification,
+classificationCode,
 quantity,
 price,
 location,
@@ -95,6 +99,38 @@ if (!normalizedCategory) {
     success: false,
     message:
       "Invalid credit type. Allowed types: Battery, Plastic, E-Waste, ELV, Used Oil, Tyre",
+  });
+}
+
+const taxonomy = getEprTaxonomy(normalizedCategory);
+const normalizedClassification = String(classification || "").trim();
+const normalizedClassificationCode = String(classificationCode || "").trim().toUpperCase();
+
+if (!taxonomy || !normalizedClassification) {
+  return res.status(400).json({
+    success: false,
+    message: "A valid EPR classification is required for this credit type",
+  });
+}
+
+if (!taxonomy.options.includes(normalizedClassification)) {
+  return res.status(400).json({
+    success: false,
+    message: `Invalid classification for ${normalizedCategory}`,
+  });
+}
+
+if (taxonomy.classificationType !== String(classificationType || "").trim()) {
+  return res.status(400).json({
+    success: false,
+    message: "Invalid classification type for this credit stream",
+  });
+}
+
+if (normalizedCategory === "E-Waste" && !validateEeeItemCode(normalizedClassificationCode, normalizedClassification)) {
+  return res.status(400).json({
+    success: false,
+    message: "EEE item code is required for E-Waste listings",
   });
 }
 
@@ -307,6 +343,9 @@ const document =
       parsedCertificateValidTill,
     certificateCategory:
       normalizedCategory,
+    certificateClassificationType: taxonomy.classificationType,
+    certificateClassification: normalizedClassification,
+    certificateClassificationCode: normalizedClassificationCode,
     certificateComplianceYear:
       complianceYear.trim(),
     verificationStatus:
@@ -330,6 +369,10 @@ const listing =
 
     category:
       normalizedCategory,
+
+    classificationType: taxonomy.classificationType,
+    classification: normalizedClassification,
+    classificationCode: normalizedClassificationCode,
 
     totalQuantity:
       parsedQuantity,
@@ -411,7 +454,7 @@ status: "pending_review",
 )
 .populate(
 "documentId",
-"fileName fileUrl mimeType fileSize verificationStatus createdAt certificateNumber sourcePortal certificateQuantity certificateIssuedDate certificateValidTill certificateCategory certificateComplianceYear"
+"fileName fileUrl mimeType fileSize verificationStatus createdAt certificateNumber sourcePortal certificateQuantity certificateIssuedDate certificateValidTill certificateCategory certificateClassificationType certificateClassification certificateClassificationCode certificateComplianceYear"
 )
 .sort({
 createdAt: -1,
@@ -581,6 +624,17 @@ if (status === "active") {
     listingDocument.certificateComplianceYear?.trim() ===
     listing.complianceYear.trim();
 
+  const classificationMatches =
+    !listingDocument.certificateClassification ||
+    listingDocument.certificateClassification.trim().toLowerCase() ===
+      String(listing.classification || "").trim().toLowerCase();
+
+  const classificationCodeMatches =
+    listing.category !== "E-Waste" ||
+    !listingDocument.certificateClassificationCode ||
+    listingDocument.certificateClassificationCode.trim().toUpperCase() ===
+      String(listing.classificationCode || "").trim().toUpperCase();
+
   const quantityCoversListing =
     Number(listingDocument.certificateQuantity) >= Number(listing.quantity);
 
@@ -602,12 +656,14 @@ if (status === "active") {
     });
   }
 
-  if (!categoryMatches || !yearMatches || !quantityCoversListing || !validityCoversListing) {
+  if (!categoryMatches || !classificationMatches || !classificationCodeMatches || !yearMatches || !quantityCoversListing || !validityCoversListing) {
     return res.status(400).json({
       success: false,
       message: "Certificate details do not match the listing. Review the category, compliance year, quantity and validity before approval.",
       verification: {
         categoryMatches,
+        classificationMatches,
+        classificationCodeMatches,
         yearMatches,
         quantityCoversListing,
         validityCoversListing,
@@ -857,7 +913,7 @@ let query =
     )
     .populate(
       "documentId",
-      "fileName fileUrl verificationStatus certificateNumber sourcePortal certificateQuantity certificateIssuedDate certificateValidTill certificateCategory certificateComplianceYear"
+      "fileName fileUrl verificationStatus certificateNumber sourcePortal certificateQuantity certificateIssuedDate certificateValidTill certificateCategory certificateClassificationType certificateClassification certificateClassificationCode certificateComplianceYear"
     );
 
 switch (sort) {
@@ -1118,6 +1174,9 @@ export const updateSellerListing = async (req, res) => {
 
     const {
       category,
+      classificationType,
+      classification,
+      classificationCode,
       quantity,
       price,
       location,
@@ -1128,6 +1187,9 @@ export const updateSellerListing = async (req, res) => {
 
     const previous = {
       category: listing.category,
+      classificationType: listing.classificationType,
+      classification: listing.classification,
+      classificationCode: listing.classificationCode,
       quantity: listing.quantity,
       totalQuantity: listing.totalQuantity,
       reservedQuantity: listing.reservedQuantity,
@@ -1162,6 +1224,24 @@ export const updateSellerListing = async (req, res) => {
       }
 
       listing.category = normalizedCategory;
+    }
+
+    if (classification !== undefined || classificationType !== undefined || classificationCode !== undefined || category !== undefined) {
+      const taxonomy = getEprTaxonomy(listing.category);
+      const nextClassification = String(classification ?? listing.classification ?? "").trim();
+      const nextClassificationType = String(classificationType ?? listing.classificationType ?? taxonomy?.classificationType ?? "").trim();
+      const nextClassificationCode = String(classificationCode ?? listing.classificationCode ?? "").trim().toUpperCase();
+
+      if (!taxonomy || nextClassificationType !== taxonomy.classificationType || !taxonomy.options.includes(nextClassification)) {
+        return res.status(400).json({ success: false, message: `Invalid classification for ${listing.category}` });
+      }
+      if (listing.category === "E-Waste" && !validateEeeItemCode(nextClassificationCode, nextClassification)) {
+        return res.status(400).json({ success: false, message: "EEE item code is required for E-Waste listings" });
+      }
+
+      listing.classificationType = taxonomy.classificationType;
+      listing.classification = nextClassification;
+      listing.classificationCode = nextClassificationCode;
     }
 
     if (quantity !== undefined) {
@@ -1263,6 +1343,9 @@ export const updateSellerListing = async (req, res) => {
       before: previous,
       after: {
         category: listing.category,
+        classificationType: listing.classificationType,
+        classification: listing.classification,
+        classificationCode: listing.classificationCode,
         quantity: listing.quantity,
         totalQuantity: listing.totalQuantity,
         reservedQuantity: listing.reservedQuantity,

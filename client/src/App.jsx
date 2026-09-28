@@ -122,6 +122,7 @@ function Navbar({ page, onNavigate }) {
       : []),
     { label: "How It Works", page: "how-it-works" },
     { label: "About Us", page: "about-us" },
+    { label: "Contact Us", page: "contact" },
   ];
 
   const handleNavigate = (target, id) => {
@@ -630,37 +631,25 @@ function RouterApp() {
         </Routes>
       </main>
       {!isDashboard && <PublicFooter user={user} onNavigate={legacyNavigate} />}
-      {location.pathname !== "/contact" && (
-        <button
-          type="button"
-          onClick={() => legacyNavigate("contact")}
-          className="group fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full border border-white/60 bg-[#35B94C] px-4 py-3 text-sm font-bold text-white shadow-[0_12px_30px_rgba(53,185,76,0.30)] transition-all hover:-translate-y-0.5 hover:bg-[#2D9F41] hover:shadow-[0_16px_34px_rgba(53,185,76,0.38)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#35B94C] focus-visible:ring-offset-2 sm:right-7"
-          aria-label="Need help? Contact EPR Nexuss"
+      <a
+        href={`https://wa.me/919220386699?text=${encodeURIComponent(
+          "i have a query regarding epr credits",
+        )}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full border border-white/70 bg-[#25D366] text-white shadow-[0_12px_30px_rgba(37,211,102,0.30)] transition-all hover:-translate-y-0.5 hover:bg-[#1EBE5D] hover:shadow-[0_16px_34px_rgba(37,211,102,0.38)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2 sm:right-7"
+        aria-label="Chat with EPR Nexuss on WhatsApp"
+        title="Chat with EPR Nexuss on WhatsApp"
+      >
+        <svg
+          className="h-7 w-7"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden="true"
         >
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15">
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M18 10c0 4.418-2.686 8-6 8a5.6 5.6 0 0 1-2.56-.62L6 18l.7-2.55A8.75 8.75 0 0 1 6 10c0-4.418 2.686-8 6-8s6 3.582 6 8Z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9.5 10.5h.01M14.5 10.5h.01"
-              />
-            </svg>
-          </span>
-          <span className="hidden sm:inline">Any issue? Contact us</span>
-          <span className="sm:hidden">Help</span>
-        </button>
-      )}
+          <path d="M20.52 3.48A11.82 11.82 0 0 0 12.08 0C5.54 0 .22 5.32.22 11.86c0 2.09.55 4.13 1.59 5.93L.12 24l6.35-1.67a11.84 11.84 0 0 0 5.61 1.42h.01c6.54 0 11.86-5.32 11.86-11.86 0-3.17-1.23-6.15-3.43-8.41ZM12.09 21.7h-.01a9.83 9.83 0 0 1-5.01-1.37l-.36-.21-3.77.99 1.01-3.67-.23-.38a9.84 9.84 0 1 1 8.37 4.64Zm5.4-7.38c-.29-.15-1.71-.84-1.98-.93-.27-.1-.46-.15-.66.15-.19.29-.75.93-.92 1.12-.17.2-.34.22-.63.07-.29-.15-1.23-.45-2.34-1.44-.86-.77-1.44-1.72-1.61-2.01-.17-.29-.02-.45.13-.6.13-.13.29-.34.44-.51.15-.17.19-.29.29-.49.1-.2.05-.37-.02-.52-.07-.15-.66-1.58-.9-2.16-.24-.57-.48-.49-.66-.5h-.56c-.19 0-.49.07-.75.37-.26.29-1 1-.1 2.43.9 1.43 1.03 1.64 2.95 2.83 1.92 1.2 1.92.8 2.27.75.35-.05 1.12-.46 1.28-.9.16-.44.16-.81.11-.89-.05-.08-.25-.13-.54-.27Z" />
+        </svg>
+      </a>
     </div>
   );
 }

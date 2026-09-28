@@ -2,8 +2,9 @@ import { useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import api from "../services/api.js";
 import { CREDIT_TYPES } from "../data/mock.js";
+import { getEprTaxonomy } from "../data/eprTaxonomy.js";
 import { INDIAN_LOCATIONS } from "../constants/indianStates.js";
-import { Badge, Button, Card, CreditTypeAvatar, Input, Select, Table, Tr, Td, Textarea } from "./ui.jsx";
+import { Badge, Button, Card, CreditTypeAvatar, EprCreditLabel, Input, Select, Table, Tr, Td, Textarea } from "./ui.jsx";
 
 const formatDateInput = (value) => {
   if (!value) return "";
@@ -28,6 +29,9 @@ function ListingEditModal({ listing, onClose, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(() => ({
     type: listing?.category || "",
+    classificationType: listing?.classificationType || "",
+    classification: listing?.classification || "",
+    classificationCode: listing?.classificationCode || "",
     quantity: String(listing?.quantity ?? ""),
     price: String(listing?.price ?? ""),
     location: listing?.location || "",
@@ -40,7 +44,8 @@ function ListingEditModal({ listing, onClose, onSaved }) {
 
   const submit = async (event) => {
     event.preventDefault();
-    if (!form.type || !form.quantity || Number(form.quantity) <= 0 || !form.price || Number(form.price) <= 0 || !form.location || !form.complianceYear || !form.validTill) {
+    const taxonomy = getEprTaxonomy(form.type);
+    if (!form.type || !taxonomy || !form.classification || !taxonomy.options.some((option) => option.value === form.classification) || (form.type === "E-Waste" && !form.classificationCode.trim()) || !form.quantity || Number(form.quantity) <= 0 || !form.price || Number(form.price) <= 0 || !form.location || !form.complianceYear || !form.validTill) {
       toast.error("Please complete all required listing fields.");
       return;
     }
@@ -52,6 +57,9 @@ function ListingEditModal({ listing, onClose, onSaved }) {
     try {
       const response = await api.patch(`/listings/${listing._id}`, {
         category: form.type,
+        classificationType: taxonomy.classificationType,
+        classification: form.classification,
+        classificationCode: form.classificationCode.trim().toUpperCase(),
         quantity: Number(form.quantity),
         price: Number(form.price),
         location: form.location.trim(),
@@ -83,7 +91,11 @@ function ListingEditModal({ listing, onClose, onSaved }) {
         </div>
         <form onSubmit={submit} className="space-y-5 p-5">
           <div className="grid gap-4 sm:grid-cols-2">
-            <Select label="Credit Type *" options={CREDIT_TYPES.map((type) => ({ label: type, value: type }))} value={form.type} onChange={(e) => setForm((current) => ({ ...current, type: e.target.value }))} />
+            <Select label="Credit Type *" options={CREDIT_TYPES.map((type) => ({ label: type, value: type }))} value={form.type} onChange={(e) => { const next = e.target.value; const taxonomy = getEprTaxonomy(next); setForm((current) => ({ ...current, type: next, classificationType: taxonomy?.classificationType || "", classification: "", classificationCode: "" })); }} />
+            {form.type && getEprTaxonomy(form.type) && (<>
+              <Select label={`${getEprTaxonomy(form.type).classificationLabel} *`} options={getEprTaxonomy(form.type).options} placeholder="Select classification" value={form.classification} onChange={(e) => setForm((current) => ({ ...current, classification: e.target.value }))} />
+              {form.type === "E-Waste" && <Input label="EEE Item Code *" placeholder="e.g. ITEW3" value={form.classificationCode} onChange={(e) => setForm((current) => ({ ...current, classificationCode: e.target.value.toUpperCase() }))} />}
+            </>)}
             <Input label="Quantity (MT) *" type="number" min="0.01" step="any" value={form.quantity} onChange={(e) => setForm((current) => ({ ...current, quantity: e.target.value }))} />
             <Input label="Price (₹/MT) *" type="number" min="0.01" step="any" value={form.price} onChange={(e) => setForm((current) => ({ ...current, price: e.target.value }))} />
             <Select
@@ -167,7 +179,7 @@ function SellerListingsSection({ listings, loading, error, onRefresh, onNavigate
     if (!bucket) return false;
     const q = query.trim().toLowerCase();
     if (!q) return true;
-    return [listing.category, listing.location, listing.complianceYear, listing.status, listing._id].filter(Boolean).join(" ").toLowerCase().includes(q);
+    return [listing.category, listing.classification, listing.classificationCode, listing.location, listing.complianceYear, listing.status, listing._id].filter(Boolean).join(" ").toLowerCase().includes(q);
   }), [listings, filter, query]);
 
   const handleStatus = async (listing, status) => {
@@ -192,6 +204,9 @@ function SellerListingsSection({ listings, loading, error, onRefresh, onNavigate
     const document = listing.documentId || {};
     const draft = {
       type: listing.category || "",
+      classificationType: listing.classificationType || "",
+      classification: listing.classification || "",
+      classificationCode: listing.classificationCode || "",
       quantity: listing.quantity ?? "",
       price: listing.price ?? "",
       location: listing.location || "",
@@ -242,6 +257,15 @@ function SellerListingsSection({ listings, loading, error, onRefresh, onNavigate
                       <CreditTypeAvatar type={listing.category} size="sm" />
                       <div>
                         <span className="font-semibold text-[#101828]">{listing.category}</span>
+                        {listing.classification && (
+                          <span className="text-xs text-[#667085]">
+                            <EprCreditLabel
+                              category=""
+                              classification={listing.classification}
+                              classificationCode={listing.classificationCode}
+                            />
+                          </span>
+                        )}
                         <span className="mt-0.5 block text-[11px] text-[#98A2B3]">#{String(listing._id).slice(-8)}</span>
                       </div>
                     </div>

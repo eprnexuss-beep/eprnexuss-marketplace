@@ -28,7 +28,7 @@ const getRequest = async (id) =>
   PurchaseRequest.findById(id).populate({
     path: "listingId",
     select:
-      "category quantity reservedQuantity price location complianceYear validTill sellerId",
+      "category classificationType classification classificationCode quantity reservedQuantity price location complianceYear validTill sellerId",
   });
 
 const privateRole = (request, user) => {
@@ -405,7 +405,7 @@ export const getAdminNegotiations = async (
         path: "listingId",
 
         select:
-          "category quantity reservedQuantity price location complianceYear validTill sellerId",
+          "category classificationType classification classificationCode quantity reservedQuantity price location complianceYear validTill sellerId",
 
         populate: {
           path: "sellerId",

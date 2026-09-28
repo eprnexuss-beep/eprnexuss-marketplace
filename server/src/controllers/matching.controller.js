@@ -37,7 +37,7 @@ export const getRequirementMatches = async (req, res) => {
     const matches = scoredMatches.map((match) => ({
       listingId: match.listing._id,
       seller: { id: match.listing.sellerId?._id, company: match.listing.sellerId?.company || match.listing.sellerId?.name || "Verified Seller", verifiedBadge: Boolean(match.listing.sellerId?.verifiedBadge) },
-      category: match.listing.category, availableQuantity: match.availableQuantity, requestedQuantity: remaining, price: publicPriceForMatch(match.listing), budget: Number(requirement.budget || 0), location: match.listing.location, complianceYear: match.listing.complianceYear, validTill: match.listing.validTill, matchScore: match.score, quantityCoverage: Math.min(match.availableQuantity, remaining), fullQuantityMatch: match.availableQuantity >= remaining, priceWithinBudget: match.budgetMatch, locationMatch: match.locationMatch, reasons: match.reasons,
+      category: match.listing.category, classification: match.listing.classification, classificationCode: match.listing.classificationCode, availableQuantity: match.availableQuantity, requestedQuantity: remaining, price: publicPriceForMatch(match.listing), budget: Number(requirement.budget || 0), location: match.listing.location, complianceYear: match.listing.complianceYear, validTill: match.listing.validTill, matchScore: match.score, quantityCoverage: Math.min(match.availableQuantity, remaining), fullQuantityMatch: match.availableQuantity >= remaining, priceWithinBudget: match.budgetMatch, locationMatch: match.locationMatch, reasons: match.reasons,
     }));
 
     return res.status(200).json({ success: true, requirement, count: matches.length, matches });

@@ -1,7 +1,7 @@
 import { toast } from "react-toastify";
 import { useEffect, useMemo, useState } from "react";
 import api from "../services/api.js";
-import { Badge, Button, Card, Input, Textarea } from "./ui";
+import { Badge, Button, Card, EprCreditLabel, Input, Textarea } from "./ui";
 
 const money = (value) =>
   `₹${Number(value || 0).toLocaleString("en-IN", {
@@ -311,6 +311,11 @@ export function NegotiationChat({
                   <p className="text-xs text-[#9CA3AF]">Credit</p>
                   <p className="font-semibold text-[#0F1923] mt-1">
                     {request?.listing?.category || "EPR Credit"}
+                    {request?.listing?.classification && (
+                      <span className="mt-0.5 block text-xs font-normal text-[#667085]">
+                        <EprCreditLabel category="" classification={request.listing.classification} classificationCode={request.listing.classificationCode} />
+                      </span>
+                    )}
                   </p>
                   <p className="text-sm text-[#6B7280] mt-1">
                     {request?.requestedQuantity || 0} MT

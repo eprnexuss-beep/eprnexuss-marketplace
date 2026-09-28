@@ -4,6 +4,11 @@ import { createNotification } from "./notification.service.js";
 
 const normalize = (value) => String(value || "").trim().toLowerCase();
 
+// Compliance years may exist in older records as either "2025-26" or
+// "FY 2025-26". Treat both representations as the same year.
+const normalizeComplianceYear = (value) =>
+  normalize(value).replace(/^fy\s*/i, "");
+
 const publicPrice = (listing) => {
   const base = Number(listing?.price || 0);
   const marginType = listing?.publicMarginType;
@@ -43,7 +48,9 @@ export const scoreRequirementMatch = (requirement, listing) => {
   const budget = Number(requirement.budget || 0);
   const price = publicPrice(listing);
   const categoryMatch = normalize(requirement.type) === normalize(listing.category);
-  const yearMatch = normalize(requirement.complianceYear) === normalize(listing.complianceYear);
+  const classificationMatch = !requirement.classification || normalize(requirement.classification) === normalize(listing.classification);
+  const classificationCodeMatch = !requirement.classificationCode || normalize(requirement.classificationCode) === normalize(listing.classificationCode);
+  const yearMatch = normalizeComplianceYear(requirement.complianceYear) === normalizeComplianceYear(listing.complianceYear);
   const budgetMatch = price > 0 && budget > 0 && price <= budget;
   const locationMatch = locationMatches(requirement, listing);
   const quantityCoverage = requiredQuantity > 0 ? Math.min(availableQuantity / requiredQuantity, 1) : 0;
@@ -62,7 +69,9 @@ export const scoreRequirementMatch = (requirement, listing) => {
   }
 
   const score =
-    (categoryMatch ? 30 : 0) +
+    (categoryMatch ? 25 : 0) +
+    (classificationMatch ? 10 : 0) +
+    (classificationCodeMatch ? 5 : 0) +
     (yearMatch ? 20 : 0) +
     budgetScore +
     (locationMatch ? 15 : 0) +
@@ -80,6 +89,8 @@ export const scoreRequirementMatch = (requirement, listing) => {
     daysToExpiry,
     reasons: [
       categoryMatch ? "Credit type matches" : "Credit type does not match",
+      classificationMatch ? "Classification matches" : "Classification does not match",
+      classificationCodeMatch ? "Item code matches" : "Item code does not match",
       yearMatch ? "Compliance year matches" : "Compliance year does not match",
       budgetMatch ? (price < budget ? "Price is within budget" : "Price meets your budget") : "Price exceeds budget",
       locationMatch ? (requirement.location ? "Location matches" : "Location preference is flexible") : "Location does not match",
@@ -93,7 +104,8 @@ export const findMatchingListings = async (requirement, { minimumScore = 70 } = 
   const listings = await SellerListing.find({
     status: "active",
     category: { $regex: `^${requirement.type}$`, $options: "i" },
-    complianceYear: requirement.complianceYear,
+    ...(requirement.classification ? { classification: { $regex: `^${requirement.classification}$`, $options: "i" } } : {}),
+    ...(requirement.classificationCode ? { classificationCode: { $regex: `^${requirement.classificationCode}$`, $options: "i" } } : {}),
     validTill: { $gte: new Date() },
     quantity: { $gt: 0 },
   })
@@ -102,7 +114,7 @@ export const findMatchingListings = async (requirement, { minimumScore = 70 } = 
 
   return listings
     .map((listing) => ({ listing, ...scoreRequirementMatch(requirement, listing) }))
-    .filter((match) => match.score >= minimumScore && match.budgetMatch && match.locationMatch && match.availableQuantity > 0)
+    .filter((match) => match.classificationMatch && match.classificationCodeMatch && match.score >= minimumScore && match.budgetMatch && match.locationMatch && match.availableQuantity > 0)
     .sort((a, b) => b.score - a.score || Number(a.listing.price) - Number(b.listing.price) || b.availableQuantity - a.availableQuantity);
 };
 
@@ -115,8 +127,8 @@ export const notifyBuyerAboutRequirementMatch = async ({ requirement, listing, s
   return createNotification({
     recipient: requirement.buyerId,
     type: "requirement_match_found",
-    title: `New ${listing.category} match found`,
-    message: `${sellerName} has ${Number(score.availableQuantity).toLocaleString("en-IN")} MT available at ₹${publicPrice(listing).toLocaleString("en-IN")}/MT. Match score: ${score.score}%.`,
+    title: `New ${listing.category}${listing.classification ? ` · ${listing.classification}` : ""} match found`,
+    message: `${sellerName} has ${Number(score.availableQuantity).toLocaleString("en-IN")} MT of ${listing.category}${listing.classification ? ` · ${listing.classification}` : ""}${listing.classificationCode ? ` · ${listing.classificationCode}` : ""} available at ₹${publicPrice(listing).toLocaleString("en-IN")}/MT. Match score: ${score.score}%.`,
     entityType: "requirement",
     entityId: requirement._id,
     metadata: {
@@ -127,6 +139,9 @@ export const notifyBuyerAboutRequirementMatch = async ({ requirement, listing, s
       availableQuantity: score.availableQuantity,
       price: publicPrice(listing),
       category: listing.category,
+      classificationType: listing.classificationType || "",
+      classification: listing.classification || "",
+      classificationCode: listing.classificationCode || "",
     },
     dedupeKey,
   });
@@ -144,17 +159,19 @@ export const notifyMatchesForListing = async (listingId) => {
 
   if (!listing) return { checked: 0, notified: 0 };
 
+  // Use the same scoring rules as the buyer's live "View matches" endpoint.
+  // This prevents a notification from saying "match found" while the live
+  // matching screen applies different eligibility rules.
   const requirements = await BuyerRequirement.find({
     status: { $in: ["open", "matching", "partially_matched"] },
     type: { $regex: `^${listing.category}$`, $options: "i" },
-    complianceYear: listing.complianceYear,
     remainingQuantity: { $gt: 0 },
   }).lean();
 
   let notified = 0;
   for (const requirement of requirements) {
     const score = scoreRequirementMatch(requirement, listing);
-    if (score.score < 70 || !score.budgetMatch || !score.locationMatch || score.availableQuantity <= 0) continue;
+    if (score.score < 70 || !score.budgetMatch || !score.locationMatch || !score.yearMatch || !score.classificationMatch || !score.classificationCodeMatch || score.availableQuantity <= 0) continue;
     const notification = await notifyBuyerAboutRequirementMatch({ requirement, listing, score });
     if (notification) notified += 1;
   }

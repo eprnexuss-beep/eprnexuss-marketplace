@@ -1,7 +1,7 @@
 import { toast } from "react-toastify";
 import { useEffect, useMemo, useState } from "react";
 import api from "../services/api.js";
-import { Badge, Button, Card, Textarea } from "../components/ui.jsx";
+import { Badge, Button, Card, EprCreditLabel, Textarea } from "../components/ui.jsx";
 
 const formatStatus = (value) => String(value || "unknown").replaceAll("_", " ").replace(/\b\w/g, (char) => char.toUpperCase());
 
@@ -87,7 +87,7 @@ export default function ManagedMessagesPage({ initialRequestId = "", onRead }) {
         <div className="overflow-y-auto min-h-0">
           {loading ? <p className="p-6 text-sm text-[#9CA3AF]">Loading conversations...</p> : requests.map((request) => (
             <button type="button" key={request._id} onClick={() => setSelectedId(request._id)} className={`w-full text-left p-4 border-b border-[#F0F4F8] ${selectedId === request._id ? "bg-[#F0FBF1]" : "hover:bg-[#F8FAFC]"}`}>
-              <div className="flex items-center justify-between gap-2"><p className="font-semibold text-sm text-[#0F1923]">{request.listingId?.category || "EPR Credit"}</p><Badge label={formatStatus(request.status)} /></div>
+              <div className="flex items-center justify-between gap-2"><div><p className="font-semibold text-sm text-[#0F1923]">{request.listingId?.category || "EPR Credit"}</p>{request.listingId?.classification && <p className="mt-0.5 text-xs text-[#667085]"><EprCreditLabel category="" classification={request.listingId.classification} classificationCode={request.listingId.classificationCode} /></p>}</div><Badge label={formatStatus(request.status)} /></div>
               <p className="text-xs text-[#6B7280] mt-1">{request.quantity} MT</p>
             </button>
           ))}
@@ -96,7 +96,7 @@ export default function ManagedMessagesPage({ initialRequestId = "", onRead }) {
       </Card>
       <Card className="overflow-hidden flex flex-col min-h-0">
         {!selected ? <div className="h-full flex items-center justify-center p-12 text-center text-[#9CA3AF]">Select a conversation.</div> : <>
-          <div className="p-4 sm:p-5 border-b border-[#E5EAF0]"><h2 className="font-semibold text-[#0F1923]">{selected.listingId?.category || "Credit"} · {selected.quantity} MT</h2><p className="text-xs text-[#6B7280] mt-1">Buyer: {selected.buyerId?.company || selected.buyerId?.name || "—"} · Seller: {selected.listingId?.sellerId?.company || selected.listingId?.sellerId?.name || "—"}</p></div>
+          <div className="p-4 sm:p-5 border-b border-[#E5EAF0]"><h2 className="font-semibold text-[#0F1923]">{selected.listingId?.category || "Credit"} · {selected.quantity} MT</h2>{selected.listingId?.classification && <p className="mt-0.5 text-xs text-[#667085]"><EprCreditLabel category="" classification={selected.listingId.classification} classificationCode={selected.listingId.classificationCode} /></p>}<p className="text-xs text-[#6B7280] mt-1">Buyer: {selected.buyerId?.company || selected.buyerId?.name || "—"} · Seller: {selected.listingId?.sellerId?.company || selected.listingId?.sellerId?.name || "—"}</p></div>
           <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-3 bg-[#F7F9FB]">
             {threadLoading ? <div className="text-center text-sm text-[#9CA3AF]">Loading messages...</div> : messages.length === 0 ? <div className="h-full flex items-center justify-center text-sm text-[#9CA3AF]">No messages yet.</div> : messages.map((item) => <div key={item._id} className="bg-white border border-[#E5EAF0] rounded-xl p-4"><div className="flex items-center justify-between gap-3"><p className="text-xs font-semibold text-[#0F1923]">{item.senderRole === "admin" ? `EPR Nexuss → ${item.targetRole === "seller" ? "Seller" : "Buyer"}` : `${item.senderRole === "seller" ? "Seller" : "Buyer"} → EPR Nexuss`}</p><span className="text-[10px] text-[#9CA3AF]">{new Date(item.createdAt).toLocaleString("en-IN")}</span></div><p className="text-sm text-[#374151] mt-2 whitespace-pre-wrap">{item.message}</p></div>)}
           </div>
