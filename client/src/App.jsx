@@ -50,7 +50,8 @@ const getDashboardPathForRole = (role) => {
 };
 
 const getPageKey = (pathname) => {
-  if (pathname === "/marketplace" || pathname === "/epr-credits") return "marketplace";
+  if (pathname === "/marketplace" || pathname === "/epr-credits")
+    return "marketplace";
   if (pathname === "/how-it-works") return "how-it-works";
   if (pathname === "/about-us") return "about-us";
   if (pathname === "/contact") return "contact";
@@ -115,6 +116,7 @@ function Navbar({ page, onNavigate }) {
       : user?.role === "seller"
         ? "seller-dashboard"
         : "buyer-dashboard";
+
   const publicLinks = [
     { label: "EPR Credits", page: "epr-credits" },
     ...(user?.role === "buyer" || !isAuthenticated
@@ -131,12 +133,14 @@ function Navbar({ page, onNavigate }) {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[#E5EAF0]/90 bg-gray-100 backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-[#E5EAF0]/90 bg-gray-100/95 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+
+        {/* Logo */}
         <button
           type="button"
           onClick={() => handleNavigate("home")}
-          className="group flex min-w-0 items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5AC361] focus-visible:ring-offset-2"
+          className="group flex min-w-0 shrink-0 items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5AC361] focus-visible:ring-offset-2"
           aria-label="EPR Nexus home"
         >
           <img
@@ -146,18 +150,24 @@ function Navbar({ page, onNavigate }) {
           />
         </button>
 
+        {/* Primary Navigation */}
         <nav
-          className="hidden items-center gap-0.5 md:flex"
+          className="hidden flex-1 items-center justify-center gap-0.5 md:flex"
           aria-label="Primary navigation"
         >
           {publicLinks.map((link) => {
             const isActive = page === link.page && link.page !== "home";
+
             return (
               <button
                 key={link.label}
                 type="button"
                 onClick={() => handleNavigate(link.page)}
-                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5AC361] focus-visible:ring-offset-1 ${isActive ? "bg-[#F0FBF1] text-[#2E7D32]" : "text-[#667085] hover:bg-[#F7F9FB] hover:text-[#1F2937]"}`}
+                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5AC361] focus-visible:ring-offset-1 ${
+                  isActive
+                    ? "bg-[#F0FBF1] text-[#2E7D32]"
+                    : "text-[#667085] hover:bg-[#F7F9FB] hover:text-[#1F2937]"
+                }`}
               >
                 {link.label}
               </button>
@@ -165,9 +175,41 @@ function Navbar({ page, onNavigate }) {
           })}
         </nav>
 
-        <div className="hidden shrink-0 items-center gap-1.5 md:flex">
+        {/* Right Side Actions */}
+        <div className="hidden shrink-0 items-center gap-2 md:flex">
+
+          {/* Main Website */}
+          <a
+            href="https://eprnexuss.com/"
+            className="group inline-flex items-center gap-2 rounded-lg border border-[#D9E0E7] bg-white px-3.5 py-2 text-sm font-medium text-[#475467] shadow-sm transition-all hover:border-[#5AC361] hover:bg-[#F7FFF8] hover:text-[#2E7D32]"
+            aria-label="Visit main EPR Nexuss website"
+          >
+            <svg
+              className="h-4 w-4 transition-transform group-hover:-translate-x-0.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.8}
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M14 4h6m0 0v6m0-6L10 14"
+              />
+            </svg>
+
+            <span>Main Website</span>
+          </a>
+
           {!isAuthenticated ? (
             <>
+              {/* Login */}
               <button
                 type="button"
                 onClick={() => handleNavigate("auth")}
@@ -175,6 +217,8 @@ function Navbar({ page, onNavigate }) {
               >
                 Log in
               </button>
+
+              {/* Get Started */}
               <button
                 type="button"
                 onClick={() => handleNavigate("auth-signup")}
@@ -185,6 +229,7 @@ function Navbar({ page, onNavigate }) {
             </>
           ) : (
             <>
+              {/* Dashboard */}
               <button
                 type="button"
                 onClick={() => handleNavigate(dashboardPage)}
@@ -192,7 +237,11 @@ function Navbar({ page, onNavigate }) {
               >
                 Dashboard
               </button>
+
+              {/* Notifications */}
               <NotificationBell compact onNavigate={onNavigate} />
+
+              {/* Profile */}
               {user?.role === "admin" ? (
                 <AdminProfileMenu onNavigate={onNavigate} compact />
               ) : (
@@ -202,6 +251,7 @@ function Navbar({ page, onNavigate }) {
           )}
         </div>
 
+        {/* Mobile Menu Button */}
         <button
           type="button"
           className="rounded-lg p-2 text-[#667085] transition-colors hover:bg-[#F7F9FB] hover:text-[#1F2937] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5AC361] md:hidden"
@@ -243,6 +293,7 @@ function Navbar({ page, onNavigate }) {
         </button>
       </div>
 
+      {/* Mobile Navigation */}
       {menuOpen && (
         <div className="border-t border-[#E5EAF0] bg-white md:hidden">
           <nav
@@ -254,11 +305,45 @@ function Navbar({ page, onNavigate }) {
                 key={link.label}
                 type="button"
                 onClick={() => handleNavigate(link.page)}
-                className={`rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors ${page === link.page && link.page !== "home" ? "bg-[#F0FBF1] text-[#2E7D32]" : "text-[#475467] hover:bg-[#F7F9FB]"}`}
+                className={`rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors ${
+                  page === link.page && link.page !== "home"
+                    ? "bg-[#F0FBF1] text-[#2E7D32]"
+                    : "text-[#475467] hover:bg-[#F7F9FB]"
+                }`}
               >
                 {link.label}
               </button>
             ))}
+
+            {/* Main Website - Mobile */}
+            <a
+              href="https://eprnexuss.com/"
+              className="mt-2 flex items-center gap-2 rounded-lg border border-[#D9E0E7] bg-[#F8FAFC] px-3 py-2.5 text-sm font-semibold text-[#475467] transition-colors hover:border-[#5AC361] hover:bg-[#F0FBF1] hover:text-[#2E7D32]"
+              onClick={() => setMenuOpen(false)}
+            >
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.8}
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M14 4h6m0 0v6m0-6L10 14"
+                />
+              </svg>
+
+              Main Website
+            </a>
+
             {isAuthenticated ? (
               <button
                 type="button"
@@ -279,6 +364,7 @@ function Navbar({ page, onNavigate }) {
                 >
                   Log in
                 </button>
+
                 <button
                   type="button"
                   onClick={() => handleNavigate("auth-signup")}
