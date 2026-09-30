@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BrowserRouter,
   Navigate,
@@ -96,8 +96,211 @@ function BrandMark({ size = "md" }) {
   );
 }
 
+const TUTORIAL_VIDEO_URL =
+  "https://www.youtube.com/embed/HdWweKMps84?si=Rx6-hLhI5OKYN4Ua";
+
+const SEO_BY_PATH = {
+  "/marketplace/": {
+    title: "EPR Credit Marketplace India | Buy & Sell EPR Credits | EPR Nexuss",
+    description:
+      "Buy and sell verified EPR credits in India through EPR Nexuss. Explore plastic, e-waste, battery and other EPR credits with a transparent, mediated B2B marketplace workflow.",
+    keywords:
+      "EPR credits, EPR credit marketplace, buy EPR credits, sell EPR credits, EPR compliance credits India, plastic EPR credits, e-waste EPR credits, battery EPR credits, ELV EPR credits, verified EPR credits",
+    index: true,
+  },
+  "/marketplace/epr-credits": {
+    title: "Available EPR Credits | Verified EPR Credit Marketplace | EPR Nexuss",
+    description:
+      "Browse available EPR credits from verified sellers. Compare credit category, quantity, price, location and compliance details on EPR Nexuss.",
+    keywords:
+      "available EPR credits, buy EPR credits India, plastic EPR credits, e-waste EPR credits, battery EPR credits, ELV EPR credits, verified EPR credits",
+    index: true,
+  },
+  "/marketplace/how-it-works": {
+    title: "How EPR Credit Trading Works | EPR Nexuss",
+    description:
+      "Learn how buying and selling EPR credits works on EPR Nexuss, from verification and listing to requests, quotations, payment coordination and deal completion.",
+    keywords:
+      "how to buy EPR credits, how to sell EPR credits, EPR credit process, EPR compliance India, EPR marketplace process",
+    index: true,
+  },
+  "/marketplace/about-us": {
+    title: "About EPR Nexuss | EPR Credit Marketplace India",
+    description:
+      "Learn about EPR Nexuss, a B2B marketplace connecting businesses with verified EPR credit listings through a mediated transaction workflow.",
+    keywords:
+      "EPR Nexuss, EPR credit marketplace India, EPR compliance marketplace, EPR credits platform",
+    index: true,
+  },
+  "/marketplace/contact": {
+    title: "Contact EPR Nexuss | EPR Credit Support",
+    description:
+      "Contact EPR Nexuss for help with buying EPR credits, selling EPR credits, account access, listings and marketplace support.",
+    keywords:
+      "EPR credit support, EPR Nexuss contact, EPR credits help, EPR marketplace support India",
+    index: true,
+  },
+};
+
+function RouteSEO({ pathname }) {
+  useEffect(() => {
+    const normalizedPath = pathname.endsWith("/") ? pathname : `${pathname}/`;
+    const config =
+      SEO_BY_PATH[normalizedPath] ||
+      SEO_BY_PATH[
+        `/marketplace${pathname.endsWith("/") ? pathname : `${pathname}/`}`
+      ];
+
+    const isPrivate = [
+      "/seller",
+      "/buyer",
+      "/admin",
+      "/verification",
+      "/login",
+      "/signup",
+      "/forgot-password",
+      "/reset-password",
+      "/email-pending",
+      "/verify-email",
+      "/google-signup-phone",
+      "/seller/listings/new",
+    ].some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+
+    const isCreditDetail = pathname.startsWith("/credits/");
+    const title =
+      config?.title ||
+      (isCreditDetail
+        ? "EPR Credit Details | Verified EPR Credit Marketplace | EPR Nexuss"
+        : "EPR Nexuss | Verified EPR Credit Marketplace India");
+    const description =
+      config?.description ||
+      (isCreditDetail
+        ? "Review verified EPR credit listing details, availability, location and compliance information on EPR Nexuss."
+        : "EPR Nexuss connects businesses with verified EPR credit listings through a transparent, mediated marketplace workflow.");
+    const keywords =
+      config?.keywords ||
+      (isCreditDetail
+        ? "EPR credit details, verified EPR credits, buy EPR credits India, EPR compliance credits"
+        : "EPR credits, EPR credit marketplace, EPR compliance India, buy EPR credits, sell EPR credits");
+    const shouldIndex = Boolean(config?.index || isCreditDetail) && !isPrivate;
+    const canonicalPath = pathname === "/" ? "/marketplace/" : `/marketplace${pathname}`;
+    const canonicalUrl = `${window.location.origin}${canonicalPath}`;
+
+    document.title = title;
+
+    const setMeta = (name, content) => {
+      let element = document.head.querySelector(`meta[name="${name}"]`);
+      if (!element) {
+        element = document.createElement("meta");
+        element.setAttribute("name", name);
+        document.head.appendChild(element);
+      }
+      element.setAttribute("content", content);
+    };
+
+    const setProperty = (property, content) => {
+      let element = document.head.querySelector(`meta[property="${property}"]`);
+      if (!element) {
+        element = document.createElement("meta");
+        element.setAttribute("property", property);
+        document.head.appendChild(element);
+      }
+      element.setAttribute("content", content);
+    };
+
+    setMeta("description", description);
+    setMeta("keywords", keywords);
+    setMeta("robots", shouldIndex ? "index, follow" : "noindex, nofollow");
+    setProperty("og:title", title);
+    setProperty("og:description", description);
+    setProperty("og:type", "website");
+    setProperty("og:url", canonicalUrl);
+    setProperty("twitter:card", "summary");
+    setProperty("twitter:title", title);
+    setProperty("twitter:description", description);
+
+    let canonical = document.head.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.setAttribute("rel", "canonical");
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute("href", canonicalUrl);
+  }, [pathname]);
+
+  return null;
+}
+
+function TutorialModal({ open, onClose }) {
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[9999] flex h-screen w-screen items-center justify-center bg-black/80 p-4 backdrop-blur-sm sm:p-6"
+      role="dialog"
+      aria-modal="true"
+      aria-label="EPR credits tutorial"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div className="relative flex w-full max-w-5xl items-center justify-center">
+        <div className="relative w-full overflow-hidden rounded-2xl bg-black shadow-2xl">
+          
+          {/* Close button */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-black/75 text-2xl leading-none text-white transition hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            aria-label="Close tutorial"
+          >
+            ×
+          </button>
+
+          {/* Responsive video */}
+          <div className="relative aspect-video w-full">
+            <iframe
+              className="absolute inset-0 h-full w-full"
+              src={TUTORIAL_VIDEO_URL}
+              title="How to buy EPR credits on EPR Nexuss"
+              frameBorder="0"
+              loading="eager"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allowFullScreen
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Navbar({ page, onNavigate }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
   const { user, isAuthenticated } = useAuth();
   const location = useLocation();
 
@@ -124,6 +327,7 @@ function Navbar({ page, onNavigate }) {
       : []),
     { label: "How It Works", page: "how-it-works" },
     { label: "About Us", page: "about-us" },
+    { label: "Tutorial", page: "tutorial" },
     { label: "Contact Us", page: "contact" },
   ];
 
@@ -162,7 +366,14 @@ function Navbar({ page, onNavigate }) {
               <button
                 key={link.label}
                 type="button"
-                onClick={() => handleNavigate(link.page)}
+                onClick={() => {
+                  if (link.page === "tutorial") {
+                    setMenuOpen(false);
+                    setTutorialOpen(true);
+                    return;
+                  }
+                  handleNavigate(link.page);
+                }}
                 className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5AC361] focus-visible:ring-offset-1 ${
                   isActive
                     ? "bg-[#F0FBF1] text-[#2E7D32]"
@@ -304,7 +515,14 @@ function Navbar({ page, onNavigate }) {
               <button
                 key={link.label}
                 type="button"
-                onClick={() => handleNavigate(link.page)}
+                onClick={() => {
+                  if (link.page === "tutorial") {
+                    setMenuOpen(false);
+                    setTutorialOpen(true);
+                    return;
+                  }
+                  handleNavigate(link.page);
+                }}
                 className={`rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors ${
                   page === link.page && link.page !== "home"
                     ? "bg-[#F0FBF1] text-[#2E7D32]"
@@ -377,6 +595,11 @@ function Navbar({ page, onNavigate }) {
           </nav>
         </div>
       )}
+
+      <TutorialModal
+        open={tutorialOpen}
+        onClose={() => setTutorialOpen(false)}
+      />
     </header>
   );
 }
@@ -514,6 +737,9 @@ function RouterApp() {
   const location = useLocation();
   const page = getPageKey(location.pathname);
 
+  // Keep titles, descriptions and indexing directives aligned with the current SPA route.
+  // Private dashboard/auth routes are explicitly noindexed.
+
   const legacyNavigate = (target, id) => {
     const paths = {
       home: "/",
@@ -599,6 +825,7 @@ function RouterApp() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#F7F9FB]">
+      <RouteSEO pathname={location.pathname} />
       <Navbar page={page} onNavigate={legacyNavigate} />
       <main className="min-w-0 flex-1">
         <Routes>

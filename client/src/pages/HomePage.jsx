@@ -176,7 +176,6 @@ function HomePage({ onNavigate }) {
     maxPrice: "",
     location: "",
   });
-  const [showTutorial, setShowTutorial] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -464,18 +463,25 @@ function HomePage({ onNavigate }) {
               See how to find the right credit, raise a request, review the quotation and complete the mediated purchase.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowTutorial(true)}
-            className="group inline-flex shrink-0 items-center gap-3 rounded-xl bg-[#07140d] px-5 py-3 text-sm font-semibold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#10261a]"
-          >
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#5AC361] text-[#07140d] transition group-hover:scale-105">
-              <svg className="ml-0.5 h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M8 5.5v13L18.5 12 8 5.5Z" />
-              </svg>
-            </span>
-            Watch tutorial
-          </button>
+          <div className="w-full shrink-0 md:w-[min(100%,460px)]">
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-black shadow-[0_14px_40px_rgba(15,25,35,0.10)]">
+              <div className="aspect-video w-full">
+                <iframe
+                  className="h-full w-full"
+                  src="https://www.youtube.com/embed/HdWweKMps84?si=Rx6-hLhI5OKYN4Ua"
+                  title="How to buy EPR credits on EPR Nexuss"
+                  frameBorder="0"
+                  loading="lazy"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  allowFullScreen
+                />
+              </div>
+            </div>
+            <p className="mt-2 text-center text-[11px] font-medium text-slate-400">
+              Watch the full tutorial or use the maximize control.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -809,39 +815,7 @@ function HomePage({ onNavigate }) {
         </section>
       )}
 
-      {showTutorial && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-          role="dialog"
-          aria-modal="true"
-          aria-label="EPR credits buyer tutorial"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setShowTutorial(false);
-          }}
-        >
-          <div className="relative w-full max-w-4xl overflow-hidden rounded-2xl bg-black shadow-2xl">
-            <button
-              type="button"
-              onClick={() => setShowTutorial(false)}
-              className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/70 text-xl text-white transition hover:bg-black"
-              aria-label="Close tutorial"
-            >
-              ×
-            </button>
-            <div className="aspect-video w-full">
-              <iframe
-                className="h-full w-full"
-                src="https://www.youtube.com/embed/HdWweKMps84?si=Rx6-hLhI5OKYN4Ua"
-                title="How to buy EPR credits on EPR Nexuss"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                referrerPolicy="strict-origin-when-cross-origin"
-                allowFullScreen
-              />
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }

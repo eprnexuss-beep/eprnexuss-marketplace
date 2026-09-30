@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext.jsx";
+import { toast } from "react-toastify";
 
 const CONTACTS = {
   email: "info@eprnexuss.com",
@@ -12,6 +13,8 @@ const CONTACTS = {
 };
 
 const SUPPORT_PHONE = "919220386699";
+const GOOGLE_SHEET_WEB_APP_URL =
+  "https://script.google.com/macros/s/AKfycbwrqo_I23XO91US27C4LyUWjUYLxnyKYml8IrgggOk56izkM62Lf5nDSQODI4EymH-kzA/exec";
 
 const SUPPORT_ISSUES = {
   buyer: [
@@ -40,11 +43,22 @@ function SupportForm() {
 
   useEffect(() => {
     if (!user) return;
+
+    // Some older user records can contain phone as numeric 0.
+    // Never prefill that value into the support form.
+    const rawUserPhone = user?.phone;
+    const userPhone =
+      rawUserPhone !== null &&
+      rawUserPhone !== undefined &&
+      String(rawUserPhone).trim() !== "0"
+        ? String(rawUserPhone).trim()
+        : "";
+
     setForm((current) => ({
       ...current,
-      name: current.name || user?.name || "",
-      phone: current.phone || user?.phone || "",
-      email: current.email || user?.email || "",
+      name: current.name || String(user?.name || ""),
+      phone: current.phone || userPhone,
+      email: current.email || String(user?.email || ""),
       role:
         current.role ||
         (user?.role === "buyer" || user?.role === "seller" ? user.role : ""),
@@ -60,44 +74,73 @@ function SupportForm() {
     }));
   };
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
+ const handleSubmit = async (event) => {
+  event.preventDefault();
 
-    const name = form.name.trim();
-    const phone = form.phone.trim();
-    const email = form.email.trim();
-    const message = form.message.trim();
+  const name = String(form.name || "").trim();
+  // Always treat phone numbers as text. Never let JavaScript/Google Sheets
+  // convert them into a numeric value such as 0.
+  const phone = String(form.phone ?? "").trim();
+  const email = String(form.email ?? "").trim();
+  const message = String(form.message || "").trim();
 
-    if (!name || !phone || !email || !form.role || !form.issue) {
-      setError("Please complete all required fields before continuing.");
-      return;
-    }
+  if (!name || !phone || !email || !form.role || !form.issue) {
+    setError("Please complete all required fields before continuing.");
+    return;
+  }
 
-    if (form.issue === "Other" && !message) {
-      setError("Please describe your query when you select Other.");
-      return;
-    }
+  // Accept Indian/international numbers but reject the accidental "0"
+  // that can come from older numeric user records.
+  const phoneDigits = phone.replace(/\D/g, "");
+  if (phone === "0" || phoneDigits.length < 10 || phoneDigits.length > 15) {
+    setError("Please enter a valid phone number.");
+    return;
+  }
 
-    const whatsappMessage = [
-      "Hello EPR Nexuss Support,",
-      "",
-      `I'm ${name}.`,
-      `My contact number is ${phone}.`,
-      `My email is ${email}.`,
-      `I am a ${form.role}.`,
-      `Issue: ${form.issue}`,
-      message ? `Additional query: ${message}` : "",
-    ]
-      .filter(Boolean)
-      .join("\n");
+  if (form.issue === "Other" && !message) {
+    setError("Please describe your query when you select Other.");
+    return;
+  }
 
-    const whatsappUrl = `https://wa.me/${SUPPORT_PHONE}?text=${encodeURIComponent(
-      whatsappMessage,
-    )}`;
+  const sheetData = {
+  name: name,
+  phone: String(phone).trim(),
+  email: email,
+  type: form.role,
+  issue: form.issue,
+  manualQuery: message,
+};
 
-    window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+console.log("DATA SENT TO GOOGLE SHEET:", sheetData);
+
+  try {
+    await fetch(GOOGLE_SHEET_WEB_APP_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8",
+      },
+      body: JSON.stringify(sheetData),
+      mode: "no-cors",
+    });
+
     setError("");
-  };
+    
+   toast.success("Your query has been submitted successfully.");
+
+    setForm({
+      name: "",
+      phone: "",
+      email: "",
+      role: "",
+      issue: "",
+      message: "",
+    });
+
+  } catch (error) {
+    console.error("Google Sheet submission failed:", error);
+    setError("Unable to submit your query. Please try again.");
+  }
+};
 
   const issues = form.role ? SUPPORT_ISSUES[form.role] : [];
 
@@ -157,8 +200,9 @@ function SupportForm() {
               Phone number *
             </span>
             <input
-              type="tel"
-              value={form.phone}
+              type="text"
+              inputMode="tel"
+              value={form.phone ?? ""}
               onChange={(event) =>
                 setForm((current) => ({
                   ...current,
@@ -278,15 +322,7 @@ function SupportForm() {
           type="submit"
           className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1EBE5D] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2 focus-visible:ring-offset-[#12202A]"
         >
-          <svg
-            className="h-5 w-5"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            aria-hidden="true"
-          >
-            <path d="M20.52 3.48A11.82 11.82 0 0 0 12.08 0C5.54 0 .22 5.32.22 11.86c0 2.09.55 4.13 1.59 5.93L.12 24l6.35-1.67a11.84 11.84 0 0 1 5.61 1.42h.01c6.54 0 11.86-5.32 11.86-11.86 0-3.17-1.23-6.15-3.43-8.41ZM12.09 21.7h-.01a9.83 9.83 0 0 1-5.01-1.37l-.36-.21-3.77.99 1.01-3.67.13-.6.44-.51c.15-.17.19-.29.29-.49.1-.2.05-.37-.02-.52-.07-.15-.66-1.58-.9-2.16-.24-.57-.48-.49-.66-.5h-.56c-.19 0-.49.07-.75.37-.26.29-1 1-.1 2.43.9 1.43 1.03 1.64 2.95 2.83 1.92 1.2 1.92.8 2.27.75.35-.05 1.12-.46 1.28-.9.16-.44.16-.81.11-.89-.05-.08-.25-.13-.54-.27Z" />
-          </svg>
-          Send on WhatsApp
+          Send
         </button>
       </form>
     </aside>

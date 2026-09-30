@@ -52,9 +52,18 @@ export function NotificationBell({ compact = false, onNavigate }) {
   }, []);
 
   const markRead = async (id) => {
+    const current = notifications.find((item) => String(item._id) === String(id));
+    if (!current || current.read) return;
+
     try {
       await api.patch(`/notifications/${id}/read`);
-      setNotifications((items) => items.map((item) => item._id === id ? { ...item, read: true } : item));
+      setNotifications((items) =>
+        items.map((item) =>
+          item._id === id
+            ? { ...item, read: true, readAt: new Date().toISOString() }
+            : item,
+        ),
+      );
       setUnreadCount((count) => Math.max(0, count - 1));
     } catch (error) {
       console.error("Failed to mark notification as read:", error);
